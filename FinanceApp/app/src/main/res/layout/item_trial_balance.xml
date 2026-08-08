@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:paddingStart="@dimen/spacing_md"
+    android:paddingTop="10dp"
+    android:paddingEnd="@dimen/spacing_md"
+    android:paddingBottom="10dp">
+
+    <TextView
+        android:id="@+id/tvAccount"
+        style="@style/Text.Body"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="2"
+        android:text="1000 Cash"
+        android:textColor="@color/text_primary" />
+
+    <TextView
+        android:id="@+id/tvDebit"
+        style="@style/Text.Body"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:gravity="end"
+        android:text="—"
+        android:textColor="@color/success" />
+
+    <TextView
+        android:id="@+id/tvCredit"
+        style="@style/Text.Body"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:gravity="end"
+        android:text="—"
+        android:textColor="@color/danger" />
+</LinearLayout>

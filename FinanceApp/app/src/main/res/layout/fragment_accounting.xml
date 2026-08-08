@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clipToPadding="false"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingBottom="@dimen/spacing_xl">
+
+        <include layout="@layout/include_capital_card" />
+
+        <TextView
+            style="@style/Text.SectionHeader"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/spacing_md"
+            android:layout_marginTop="@dimen/spacing_sm"
+            android:text="Chart of Accounts" />
+
+        <include android:id="@+id/btnInitialCapital" layout="@layout/item_dashboard_menu" />
+        <include android:id="@+id/btnLedger" layout="@layout/item_dashboard_menu" />
+        <include android:id="@+id/btnTrialBalance" layout="@layout/item_dashboard_menu" />
+        <include android:id="@+id/btnReceivables" layout="@layout/item_dashboard_menu" />
+        <include android:id="@+id/btnPayables" layout="@layout/item_dashboard_menu" />
+        <include android:id="@+id/btnSalesHistory" layout="@layout/item_dashboard_menu" />
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

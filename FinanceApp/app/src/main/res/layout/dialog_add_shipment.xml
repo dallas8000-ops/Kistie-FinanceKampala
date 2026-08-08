@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <EditText
+            android:id="@+id/etBatchId"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Batch ID"
+            android:inputType="text" />
+
+        <Spinner
+            android:id="@+id/spinnerCountry"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp" />
+
+        <EditText
+            android:id="@+id/etSupplier"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Supplier Name"
+            android:layout_marginTop="8dp" />
+
+        <Spinner
+            android:id="@+id/spinnerStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp" />
+
+        <EditText
+            android:id="@+id/etTotalValue"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Goods Value (UGX)"
+            android:inputType="numberDecimal"
+            android:layout_marginTop="8dp" />
+
+        <EditText
+            android:id="@+id/etShippingCost"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Shipping Cost (UGX)"
+            android:inputType="numberDecimal"
+            android:layout_marginTop="8dp" />
+
+        <EditText
+            android:id="@+id/etImportDuty"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Import Duty (UGX)"
+            android:inputType="numberDecimal"
+            android:layout_marginTop="8dp" />
+
+        <EditText
+            android:id="@+id/etClearingCharges"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Clearing Charges (UGX)"
+            android:inputType="numberDecimal"
+            android:layout_marginTop="8dp" />
+
+        <EditText
+            android:id="@+id/etTrackingNumber"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Tracking Number"
+            android:layout_marginTop="8dp" />
+
+        <EditText
+            android:id="@+id/etNotes"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Notes"
+            android:layout_marginTop="8dp" />
+
+    </LinearLayout>
+</ScrollView>

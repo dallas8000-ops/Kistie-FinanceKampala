@@ -1,0 +1,66 @@
+# Gradle
+.gradle/
+build/
+**/build/
+.gradle
+/build
+/captures
+.externalNativeBuild
+
+# Local configuration file (sdk path, etc)
+local.properties
+
+# Keystore files
+*.jks
+*.keystore
+
+# IntelliJ
+*.iml
+.idea/
+.idea/*
+
+# Android Studio
+*.apk
+*.ap_ 
+
+# Generated files
+**/gen/
+**/out/
+
+# Logs
+*.log
+
+# Package Files
+*.jar
+*.war
+*.ear
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Misc
+*.orig
+
+# Gradle Wrapper
+gradle/wrapper/gradle-wrapper.jar
+
+# Kotlin
+*.kotlin_module
+*.kotlin_metadata
+
+# NDK
+obj/
+
+# Maven
+.m2/
+
+# Firebase
+google-services.json
+
+# Android Studio captures
+captures/
+
+# Crashlytics
+crashlytics.properties
+fabric.properties

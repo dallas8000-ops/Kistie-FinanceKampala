@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.FinanceApp">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity android:name=".CapitalSetupActivity" android:exported="false" />
+        <activity android:name=".HouseholdActivity" android:exported="false" />
+        <activity android:name=".BusinessActivity" android:exported="false" />
+        <activity android:name=".InventoryActivity" android:exported="false" />
+        <activity android:name=".ShipmentsActivity" android:exported="false" />
+        <activity android:name=".ReportsActivity" android:exported="false" />
+        <activity android:name=".AddSaleActivity" android:exported="false" />
+        <activity android:name=".LedgerActivity" android:exported="false" />
+        <activity android:name=".TrialBalanceActivity" android:exported="false" />
+        <activity android:name=".JournalEditActivity" android:exported="false" />
+        <activity android:name=".ReceivablesActivity" android:exported="false" />
+        <activity android:name=".PayablesActivity" android:exported="false" />
+        <activity android:name=".SalesActivity" android:exported="false" />
+        <activity android:name=".AiAssistantActivity" android:exported="false" />
+        <activity android:name=".SettingsActivity" android:exported="false" />
+
+    </application>
+
+</manifest>
