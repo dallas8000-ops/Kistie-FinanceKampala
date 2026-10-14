@@ -86,6 +86,31 @@
                 android:layout_marginTop="4dp"
                 android:background="@drawable/bg_summary_banner" />
 
+            <TextView
+                android:id="@+id/tvReceivingNumber"
+                style="@style/Text.Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_sm"
+                android:background="@color/info_bg"
+                android:padding="@dimen/spacing_sm"
+                android:visibility="gone" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilTransactionReference"
+                style="@style/TextInput.Finance"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_sm"
+                android:hint="MTN/Airtel transaction reference"
+                android:visibility="gone">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etTransactionReference"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textCapCharacters" />
+            </com.google.android.material.textfield.TextInputLayout>
+
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSave"
                 style="@style/Button.Primary"

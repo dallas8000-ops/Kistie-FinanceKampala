@@ -42,6 +42,8 @@ public class ReceivableAdapter extends RecyclerView.Adapter<ReceivableAdapter.Ho
         AccountReceivable ar = items.get(position);
         h.tvName.setText(ar.getCustomerName());
         h.tvDescription.setText(ar.getDescription());
+        h.tvPaidInfo.setText("Total " + CurrencyFormatter.formatUGX(ar.getAmount())
+            + "  ·  Paid " + CurrencyFormatter.formatUGX(ar.getAmountPaid()));
         h.tvAmount.setText(CurrencyFormatter.formatUGX(ar.getBalanceDue()) + " due");
         h.tvStatus.setText(ar.getStatus());
         h.tvDue.setText(ar.getDueDate() != null ? "Due " + fmt.format(ar.getDueDate()) : "");
@@ -51,11 +53,12 @@ public class ReceivableAdapter extends RecyclerView.Adapter<ReceivableAdapter.Ho
     public int getItemCount() { return items.size(); }
 
     class Holder extends RecyclerView.ViewHolder {
-        TextView tvName, tvDescription, tvAmount, tvStatus, tvDue;
+        TextView tvName, tvDescription, tvPaidInfo, tvAmount, tvStatus, tvDue;
         Holder(View v) {
             super(v);
             tvName = v.findViewById(R.id.tvName);
             tvDescription = v.findViewById(R.id.tvDescription);
+            tvPaidInfo = v.findViewById(R.id.tvPaidInfo);
             tvAmount = v.findViewById(R.id.tvAmount);
             tvStatus = v.findViewById(R.id.tvStatus);
             tvDue = v.findViewById(R.id.tvDue);

@@ -20,6 +20,8 @@ public class AccountPayable {
     private String status; // OPEN, PARTIAL, PAID, VOID
     private int journalEntryId;
     private int expenseId;
+    private String voidReason;
+    private Date voidedAt;
 
     public AccountPayable() {}
 
@@ -45,4 +47,8 @@ public class AccountPayable {
     public void setJournalEntryId(int journalEntryId) { this.journalEntryId = journalEntryId; }
     public int getExpenseId() { return expenseId; }
     public void setExpenseId(int expenseId) { this.expenseId = expenseId; }
+    public String getVoidReason() { return voidReason; }
+    public void setVoidReason(String voidReason) { this.voidReason = voidReason; }
+    public Date getVoidedAt() { return voidedAt; }
+    public void setVoidedAt(Date voidedAt) { this.voidedAt = voidedAt; }
 }

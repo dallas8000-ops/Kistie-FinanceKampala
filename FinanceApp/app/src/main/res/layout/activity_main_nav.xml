@@ -10,13 +10,16 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/primary"
-        app:elevation="4dp">
+        app:elevation="0dp">
 
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
+            android:paddingStart="@dimen/spacing_md"
+            android:paddingEnd="@dimen/spacing_md"
             app:title="Kistie Finance"
+            app:titleTextAppearance="@style/Text.Title"
             app:titleTextColor="@color/text_on_primary" />
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -33,6 +36,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
         android:background="@color/surface"
+        android:elevation="8dp"
         app:itemIconTint="@color/bottom_nav_color"
         app:itemTextColor="@color/bottom_nav_color"
         app:labelVisibilityMode="labeled"

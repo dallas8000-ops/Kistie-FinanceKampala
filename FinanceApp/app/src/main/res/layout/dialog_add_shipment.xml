@@ -36,18 +36,18 @@
             android:layout_marginTop="8dp" />
 
         <EditText
-            android:id="@+id/etTotalValue"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Goods Value (UGX)"
-            android:inputType="numberDecimal"
-            android:layout_marginTop="8dp" />
-
-        <EditText
             android:id="@+id/etShippingCost"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Shipping Cost (UGX)"
+            android:inputType="numberDecimal"
+            android:layout_marginTop="8dp" />
+
+        <EditText
+            android:id="@+id/etInsuranceCost"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Insurance (UGX)"
             android:inputType="numberDecimal"
             android:layout_marginTop="8dp" />
 
@@ -60,10 +60,26 @@
             android:layout_marginTop="8dp" />
 
         <EditText
+            android:id="@+id/etVat"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="VAT (UGX)"
+            android:inputType="numberDecimal"
+            android:layout_marginTop="8dp" />
+
+        <EditText
             android:id="@+id/etClearingCharges"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Clearing Charges (UGX)"
+            android:inputType="numberDecimal"
+            android:layout_marginTop="8dp" />
+
+        <EditText
+            android:id="@+id/etTransportToStore"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Transport to shop (UGX)"
             android:inputType="numberDecimal"
             android:layout_marginTop="8dp" />
 

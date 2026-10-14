@@ -1,6 +1,8 @@
 package com.financeapp.uganda.models;
 
+import androidx.annotation.NonNull;
 import androidx.room.Entity;
+import androidx.room.ColumnInfo;
 import androidx.room.PrimaryKey;
 import androidx.room.TypeConverters;
 import com.financeapp.uganda.utils.DateConverter;
@@ -28,6 +30,11 @@ public class Expense {
     private String trackingNumber;
     private int journalEntryId;
     private int payableId;
+    @NonNull
+    @ColumnInfo(defaultValue = "'POSTED'")
+    private String status = "POSTED";
+    private String voidReason;
+    private Date voidedAt;
 
     public Expense() {}
 
@@ -67,4 +74,10 @@ public class Expense {
     public void setJournalEntryId(int journalEntryId) { this.journalEntryId = journalEntryId; }
     public int getPayableId() { return payableId; }
     public void setPayableId(int payableId) { this.payableId = payableId; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+    public String getVoidReason() { return voidReason; }
+    public void setVoidReason(String voidReason) { this.voidReason = voidReason; }
+    public Date getVoidedAt() { return voidedAt; }
+    public void setVoidedAt(Date voidedAt) { this.voidedAt = voidedAt; }
 }

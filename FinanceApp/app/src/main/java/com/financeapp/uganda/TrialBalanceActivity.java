@@ -23,6 +23,7 @@ public class TrialBalanceActivity extends BaseToolbarActivity {
         AccountingService accounting = new AccountingService(db.financeDao());
         RecyclerView rv = findViewById(R.id.recyclerView);
         TextView tvStatus = findViewById(R.id.tvBalanceStatus);
+        TextView tvLegacyWarning = findViewById(R.id.tvLegacyWarning);
 
         TrialBalanceAdapter adapter = new TrialBalanceAdapter();
         rv.setLayoutManager(new LinearLayoutManager(this));
@@ -30,6 +31,14 @@ public class TrialBalanceActivity extends BaseToolbarActivity {
 
         List<TrialBalanceLine> lines = accounting.getTrialBalance();
         adapter.setLines(lines);
+
+        int legacySales = db.financeDao().getLegacySaleCount();
+        int legacyExpenses = db.financeDao().getLegacyExpenseCount();
+        if (legacySales > 0 || legacyExpenses > 0) {
+            tvLegacyWarning.setVisibility(android.view.View.VISIBLE);
+            tvLegacyWarning.setText("Needs review: " + legacySales + " sale(s) and " + legacyExpenses
+                + " expense(s) have no linked journal entry. No historical entries were added automatically.");
+        }
 
         if (!lines.isEmpty()) {
             TrialBalanceLine total = lines.get(lines.size() - 1);

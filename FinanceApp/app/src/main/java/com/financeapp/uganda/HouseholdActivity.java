@@ -15,9 +15,12 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.financeapp.uganda.adapters.ExpenseAdapter;
+import com.financeapp.uganda.accounting.ExpenseAccountingHelper;
 import com.financeapp.uganda.database.AppDatabase;
 import com.financeapp.uganda.models.Expense;
 import com.financeapp.uganda.utils.CurrencyFormatter;
+import com.financeapp.uganda.utils.MobileMoneyPaymentUi;
+import com.financeapp.uganda.utils.PaymentMethods;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.util.Calendar;
 import java.util.Date;
@@ -48,15 +51,17 @@ public class HouseholdActivity extends BaseToolbarActivity {
         adapter = new ExpenseAdapter();
         recyclerView.setAdapter(adapter);
 
-        fabAdd.setOnClickListener(v -> showAddExpenseDialog());
+        fabAdd.setOnClickListener(v -> showExpenseDialog(null));
 
         adapter.setOnExpenseClickListener(new ExpenseAdapter.OnExpenseClickListener() {
             @Override
-            public void onExpenseClick(Expense expense) {}
+            public void onExpenseClick(Expense expense) {
+                showExpenseOptions(expense);
+            }
 
             @Override
             public void onExpenseLongClick(Expense expense) {
-                showDeleteDialog(expense);
+                showExpenseOptions(expense);
             }
         });
 
@@ -70,10 +75,12 @@ public class HouseholdActivity extends BaseToolbarActivity {
         tvTotal.setText(CurrencyFormatter.formatUGX(total));
     }
 
-    private void showAddExpenseDialog() {
+    private void showExpenseDialog(Expense existing) {
         View view = LayoutInflater.from(this).inflate(R.layout.dialog_add_expense, null);
         EditText etDescription = view.findViewById(R.id.etDescription);
         EditText etAmount = view.findViewById(R.id.etAmount);
+        EditText etReference = view.findViewById(R.id.etTransactionReference);
+        TextView tvReceivingNumber = new TextView(this);
         Spinner spinnerSubCategory = view.findViewById(R.id.spinnerSubCategory);
         Spinner spinnerPayment = view.findViewById(R.id.spinnerPayment);
         Button btnDate = view.findViewById(R.id.btnDate);
@@ -82,14 +89,26 @@ public class HouseholdActivity extends BaseToolbarActivity {
                 "School Fees", "Medical", "Entertainment", "Clothing", "Others"};
         spinnerSubCategory.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, subCategories));
 
-        String[] payments = {"Cash", "Mobile Money", "Bank Transfer", "Credit"};
-        spinnerPayment.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, payments));
+        spinnerPayment.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_item,
+            PaymentMethods.options(true, false)));
+        MobileMoneyPaymentUi.bind(this, spinnerPayment, etReference,
+            view.findViewById(R.id.tilTransactionReference), tvReceivingNumber, false);
+
+        if (existing != null) {
+            etDescription.setText(existing.getDescription());
+            etAmount.setText(String.valueOf(existing.getAmount()));
+            selectSpinnerValue(spinnerSubCategory, existing.getSubCategory());
+            selectSpinnerValue(spinnerPayment, existing.getPaymentMethod());
+            selectedDate = existing.getDate() != null ? existing.getDate() : new Date();
+        } else {
+            selectedDate = new Date();
+        }
 
         btnDate.setText(android.text.format.DateFormat.format("dd MMM yyyy", selectedDate));
         btnDate.setOnClickListener(v -> showDatePicker(btnDate));
 
         new AlertDialog.Builder(this)
-                .setTitle("Add Household Expense")
+            .setTitle(existing == null ? "Add Household Expense" : "Edit Household Expense")
                 .setView(view)
                 .setPositiveButton("Save", (dialog, which) -> {
                     String description = etDescription.getText().toString().trim();
@@ -99,6 +118,7 @@ public class HouseholdActivity extends BaseToolbarActivity {
                         return;
                     }
                     Expense expense = new Expense();
+                    if (existing != null) expense.setId(existing.getId());
                     expense.setCategory("household");
                     expense.setSubCategory(spinnerSubCategory.getSelectedItem().toString());
                     expense.setDescription(description);
@@ -106,9 +126,16 @@ public class HouseholdActivity extends BaseToolbarActivity {
                     expense.setCurrency("UGX");
                     expense.setDate(selectedDate);
                     expense.setPaymentMethod(spinnerPayment.getSelectedItem().toString());
-                    db.financeDao().insertExpense(expense);
-                    loadHouseholdExpenses();
-                    Toast.makeText(this, "Expense saved!", Toast.LENGTH_SHORT).show();
+                    expense.setReceiptNumber(etReference.getText().toString().trim());
+                    try {
+                        ExpenseAccountingHelper helper = new ExpenseAccountingHelper(db);
+                        if (existing == null) helper.saveNew(expense);
+                        else helper.update(expense);
+                        loadHouseholdExpenses();
+                        Toast.makeText(this, "Expense saved!", Toast.LENGTH_SHORT).show();
+                    } catch (RuntimeException e) {
+                        Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
+                    }
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
@@ -124,17 +151,42 @@ public class HouseholdActivity extends BaseToolbarActivity {
         }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show();
     }
 
-    private void showDeleteDialog(Expense expense) {
+    private void showExpenseOptions(Expense expense) {
         new AlertDialog.Builder(this)
-                .setTitle("Delete Expense")
-                .setMessage("Are you sure you want to delete this expense?")
-                .setPositiveButton("Delete", (dialog, which) -> {
-                    db.financeDao().deleteExpense(expense);
-                    loadHouseholdExpenses();
-                    Toast.makeText(this, "Deleted", Toast.LENGTH_SHORT).show();
+                .setTitle(expense.getDescription())
+                .setItems(new String[]{"Edit", "Void"}, (dialog, which) -> {
+                    if (which == 0) showExpenseDialog(expense);
+                    else showVoidDialog(expense);
+                })
+                .show();
+    }
+
+    private void showVoidDialog(Expense expense) {
+        new AlertDialog.Builder(this)
+            .setTitle("Void Expense")
+            .setMessage("This keeps the expense for audit and reverses its accounting entry. Continue?")
+            .setPositiveButton("Void", (dialog, which) -> {
+                    try {
+                        new ExpenseAccountingHelper(db).delete(expense);
+                        loadHouseholdExpenses();
+                        Toast.makeText(this, "Expense voided", Toast.LENGTH_SHORT).show();
+                    } catch (RuntimeException e) {
+                        Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
+                    }
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
+    }
+
+    private void selectSpinnerValue(Spinner spinner, String value) {
+        if (value == null) return;
+        ArrayAdapter<?> adapter = (ArrayAdapter<?>) spinner.getAdapter();
+        for (int index = 0; index < adapter.getCount(); index++) {
+            if (value.equals(adapter.getItem(index))) {
+                spinner.setSelection(index);
+                return;
+            }
+        }
     }
 
     @Override

@@ -11,8 +11,8 @@
     android:clickable="true"
     android:focusable="true"
     android:foreground="?attr/selectableItemBackground"
-    app:cardBackgroundColor="@color/primary"
-    app:strokeColor="@color/accent"
+    app:cardBackgroundColor="@color/surface"
+    app:strokeColor="@color/divider"
     app:strokeWidth="1dp">
 
     <LinearLayout
@@ -25,7 +25,7 @@
         <FrameLayout
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:background="@drawable/bg_cta_sale">
+            android:background="@drawable/bg_icon_circle_profit">
 
             <ImageView
                 android:layout_width="28dp"
@@ -33,7 +33,7 @@
                 android:layout_gravity="center"
                 android:contentDescription="@null"
                 android:src="@drawable/ic_capital"
-                app:tint="@color/text_on_accent" />
+                app:tint="@color/success" />
         </FrameLayout>
 
         <LinearLayout
@@ -48,7 +48,7 @@
                 android:layout_height="wrap_content"
                 android:fontFamily="sans-serif-medium"
                 android:text="Initial Capital"
-                android:textColor="@color/text_on_primary"
+                android:textColor="@color/text_primary"
                 android:textSize="16sp" />
 
             <TextView
@@ -57,17 +57,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:text="Not set — tap to configure"
-                android:textColor="@color/accent_light"
+                android:textColor="@color/text_secondary"
                 android:textSize="14sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:alpha="0.8"
-                android:text="Revenue &amp; expenses link to this account"
-                android:textColor="@color/accent_light"
-                android:textSize="12sp" />
         </LinearLayout>
 
         <ImageView
@@ -75,6 +66,6 @@
             android:layout_height="24dp"
             android:contentDescription="@null"
             android:src="@drawable/ic_chevron"
-            app:tint="@color/accent" />
+            app:tint="@color/text_secondary" />
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

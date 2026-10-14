@@ -12,6 +12,7 @@ public final class AccountCodes {
     public static final int COGS = 9;
     public static final int OPERATING_EXPENSE = 10;
     public static final int INITIAL_CAPITAL = 11;
+    public static final int OWNER_DRAWINGS = 12;
 
     private AccountCodes() {}
 }

@@ -18,4 +18,22 @@
         android:layout_height="48dp"
         android:layout_marginTop="12dp"
         android:background="@drawable/bg_summary_banner" />
+
+    <TextView
+        android:id="@+id/tvReceivingNumber"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:background="@color/info_bg"
+        android:padding="8dp"
+        android:visibility="gone" />
+
+    <EditText
+        android:id="@+id/etTransactionReference"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:hint="MTN/Airtel transaction reference"
+        android:inputType="textCapCharacters"
+        android:visibility="gone" />
 </LinearLayout>

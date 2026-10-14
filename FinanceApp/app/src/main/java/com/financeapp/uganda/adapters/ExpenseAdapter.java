@@ -48,16 +48,27 @@ public class ExpenseAdapter extends RecyclerView.Adapter<ExpenseAdapter.ExpenseV
         holder.tvDate.setText(expense.getDate() != null ? dateFormat.format(expense.getDate()) : "");
         holder.tvCategory.setText(expense.getCategory() != null ? expense.getCategory().replace("_", " ").toUpperCase() : "");
 
-        if (expense.getShipmentStatus() != null && !expense.getShipmentStatus().isEmpty()) {
+        if ("VOID".equals(expense.getStatus())) {
+            holder.tvStatus.setVisibility(View.VISIBLE);
+            holder.tvStatus.setText("VOID");
+        } else if (expense.getShipmentStatus() != null && !expense.getShipmentStatus().isEmpty()) {
             holder.tvStatus.setVisibility(View.VISIBLE);
             holder.tvStatus.setText("Status: " + expense.getShipmentStatus().toUpperCase());
         } else {
             holder.tvStatus.setVisibility(View.GONE);
         }
 
+        StringBuilder details = new StringBuilder();
         if (expense.getImportSource() != null && !expense.getImportSource().isEmpty()) {
+            details.append("From: ").append(expense.getImportSource());
+        }
+        if (expense.getReceiptNumber() != null && !expense.getReceiptNumber().trim().isEmpty()) {
+            if (details.length() > 0) details.append(" · ");
+            details.append("Ref: ").append(expense.getReceiptNumber().trim());
+        }
+        if (details.length() > 0) {
             holder.tvSource.setVisibility(View.VISIBLE);
-            holder.tvSource.setText("From: " + expense.getImportSource());
+            holder.tvSource.setText(details.toString());
         } else {
             holder.tvSource.setVisibility(View.GONE);
         }

@@ -21,6 +21,8 @@ public class AccountReceivable {
     private String status; // OPEN, PARTIAL, PAID, VOID
     private int journalEntryId;
     private int saleId;
+    private String voidReason;
+    private Date voidedAt;
 
     public AccountReceivable() {}
 
@@ -48,4 +50,8 @@ public class AccountReceivable {
     public void setJournalEntryId(int journalEntryId) { this.journalEntryId = journalEntryId; }
     public int getSaleId() { return saleId; }
     public void setSaleId(int saleId) { this.saleId = saleId; }
+    public String getVoidReason() { return voidReason; }
+    public void setVoidReason(String voidReason) { this.voidReason = voidReason; }
+    public Date getVoidedAt() { return voidedAt; }
+    public void setVoidedAt(Date voidedAt) { this.voidedAt = voidedAt; }
 }

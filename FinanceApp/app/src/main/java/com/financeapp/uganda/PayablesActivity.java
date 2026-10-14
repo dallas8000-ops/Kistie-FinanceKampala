@@ -10,14 +10,16 @@ import android.widget.TextView;
 import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import com.financeapp.uganda.accounting.AccountCodes;
-import com.financeapp.uganda.accounting.AccountingService;
+import com.financeapp.uganda.accounting.ExpenseAccountingHelper;
+import com.financeapp.uganda.accounting.FinanceTransactionService;
 import com.financeapp.uganda.adapters.PayableAdapter;
 import com.financeapp.uganda.database.AppDatabase;
 import com.financeapp.uganda.models.AccountPayable;
-import com.financeapp.uganda.models.JournalEntry;
-import com.financeapp.uganda.models.JournalLine;
+import com.financeapp.uganda.models.Expense;
+import com.financeapp.uganda.models.PayablePayment;
 import com.financeapp.uganda.utils.CurrencyFormatter;
+import com.financeapp.uganda.utils.MobileMoneyPaymentUi;
+import com.financeapp.uganda.utils.PaymentMethods;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -25,7 +27,6 @@ import java.util.List;
 public class PayablesActivity extends BaseToolbarActivity {
 
     private AppDatabase db;
-    private AccountingService accounting;
     private PayableAdapter adapter;
     private TextView tvTotal;
 
@@ -35,7 +36,6 @@ public class PayablesActivity extends BaseToolbarActivity {
         setContentView(R.layout.activity_list);
         setupToolbar("Accounts Payable");
         db = AppDatabase.getInstance(this);
-        accounting = new AccountingService(db.financeDao());
         tvTotal = findViewById(R.id.tvTotal);
         RecyclerView rv = findViewById(R.id.recyclerView);
         adapter = new PayableAdapter();
@@ -55,26 +55,66 @@ public class PayablesActivity extends BaseToolbarActivity {
     }
 
     private void showOptions(AccountPayable ap) {
+        if ("VOID".equals(ap.getStatus())) return;
+        boolean canEdit = ap.getExpenseId() == 0 && ap.getAmountPaid() == 0;
+        List<String> options = new ArrayList<>();
+        options.add("Payment History");
+        options.add("Record Payment");
+        if (canEdit) options.add("Edit");
+        options.add("Void");
         new AlertDialog.Builder(this).setTitle(ap.getVendorName())
-                .setItems(new String[]{"Record Payment", "Edit", "Delete"}, (d, i) -> {
-                    if (i == 0) showPaymentDialog(ap);
-                    else if (i == 1) showAddDialog(ap);
-                    else deleteAp(ap);
+            .setItems(options.toArray(new String[0]), (d, i) -> {
+                String selected = options.get(i);
+                if ("Payment History".equals(selected)) showPaymentHistory(ap);
+                else if ("Record Payment".equals(selected)) showPaymentDialog(ap);
+                else if ("Edit".equals(selected)) showAddDialog(ap);
+                else showVoidDialog(ap);
                 }).show();
     }
+
+        private void showPaymentHistory(AccountPayable ap) {
+        StringBuilder history = new StringBuilder("Original: ")
+            .append(CurrencyFormatter.formatUGX(ap.getAmount()))
+            .append("\nPaid: ").append(CurrencyFormatter.formatUGX(ap.getAmountPaid()))
+            .append("\nBalance: ").append(CurrencyFormatter.formatUGX(ap.getBalanceDue()));
+        List<PayablePayment> payments = db.financeDao().getPayablePayments(ap.getId());
+        for (PayablePayment payment : payments) {
+            history.append("\n\n")
+                .append(payment.getPaidAt() != null
+                    ? android.text.format.DateFormat.format("dd MMM yyyy", payment.getPaidAt()) : "Date unavailable")
+                .append(" · ").append(CurrencyFormatter.formatUGX(payment.getAmount()))
+                .append(" · ").append(payment.getPaymentMethod());
+            if (payment.getReference() != null && !payment.getReference().isEmpty()) {
+            history.append(" · ").append(payment.getReference());
+            }
+            if ("REVERSED".equals(payment.getStatus())) history.append(" · REVERSED");
+        }
+        if (payments.isEmpty()) history.append("\n\nNo payments recorded.");
+        new AlertDialog.Builder(this).setTitle("Vendor Payment History")
+            .setMessage(history.toString()).setPositiveButton("Close", null).show();
+        }
 
     private void showPaymentDialog(AccountPayable ap) {
         View v = LayoutInflater.from(this).inflate(R.layout.dialog_payment, null);
         EditText etAmount = v.findViewById(R.id.etAmount);
+        EditText etReference = v.findViewById(R.id.etTransactionReference);
+        TextView tvReceivingNumber = v.findViewById(R.id.tvReceivingNumber);
         Spinner spinner = v.findViewById(R.id.spinnerPayment);
         spinner.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_item,
-                new String[]{"Cash", "Mobile Money", "Bank Transfer"}));
+            PaymentMethods.options(false, true)));
+        MobileMoneyPaymentUi.bind(this, spinner, etReference, etReference, tvReceivingNumber, false);
         etAmount.setText(String.valueOf((long) ap.getBalanceDue()));
         new AlertDialog.Builder(this).setTitle("Pay Vendor").setView(v)
                 .setPositiveButton("Save", (d, w) -> {
-                    accounting.recordPayablePayment(ap, Double.parseDouble(etAmount.getText().toString()),
-                            spinner.getSelectedItem().toString());
-                    load();
+                    try {
+                        new FinanceTransactionService(db).recordPayablePayment(
+                                ap.getId(), Double.parseDouble(etAmount.getText().toString()),
+                            spinner.getSelectedItem().toString(), new Date(),
+                            etReference.getText().toString().trim());
+                        load();
+                    } catch (IllegalArgumentException e) {
+                        android.widget.Toast.makeText(this, e.getMessage(), android.widget.Toast.LENGTH_LONG).show();
+                    }
                 }).setNegativeButton("Cancel", null).show();
     }
 
@@ -100,32 +140,44 @@ public class PayablesActivity extends BaseToolbarActivity {
                         ap.setBillDate(new Date());
                         ap.setDueDate(new Date());
                         ap.setStatus("OPEN");
-                        long id = db.financeDao().insertPayable(ap);
-                        ap.setId((int) id);
-                        List<JournalLine> lines = new ArrayList<>();
-                        lines.add(new JournalLine(0, AccountCodes.OPERATING_EXPENSE, amt, 0, "Expense"));
-                        lines.add(new JournalLine(0, AccountCodes.ACCOUNTS_PAYABLE, 0, amt, "AP"));
-                        long jeId = accounting.postManualEntry(new Date(), ap.getDescription(), lines);
-                        ap.setJournalEntryId((int) jeId);
-                        db.financeDao().updatePayable(ap);
+                        new FinanceTransactionService(db).recordManualPayable(ap);
                     } else {
-                        existing.setVendorName(etVendor.getText().toString().trim());
-                        existing.setDescription(etDesc.getText().toString().trim());
-                        existing.setAmount(amt);
-                        accounting.updatePayable(existing);
+                        AccountPayable replacement = new AccountPayable();
+                        replacement.setVendorName(etVendor.getText().toString().trim());
+                        replacement.setDescription(etDesc.getText().toString().trim());
+                        replacement.setAmount(amt);
+                        replacement.setBillDate(new Date());
+                        replacement.setDueDate(existing.getDueDate());
+                        new FinanceTransactionService(db).replaceManualPayable(existing.getId(), replacement);
                     }
                     load();
                 }).setNegativeButton("Cancel", null).show();
     }
 
-    private void deleteAp(AccountPayable ap) {
-        if (ap.getJournalEntryId() > 0) {
-            db.financeDao().deleteLinesForEntry(ap.getJournalEntryId());
-            JournalEntry je = db.financeDao().getJournalEntryById(ap.getJournalEntryId());
-            if (je != null) db.financeDao().deleteJournalEntry(je);
-        }
-        db.financeDao().deletePayable(ap);
-        load();
+    private void showVoidDialog(AccountPayable payable) {
+        EditText reason = new EditText(this);
+        reason.setHint("Reason for voiding");
+        new AlertDialog.Builder(this)
+                .setTitle("Void payable")
+                .setMessage("This reverses the payable and any recorded vendor payments. Confirm refunded funds have been returned.")
+                .setView(reason)
+                .setPositiveButton("Confirm and void", (dialog, which) -> {
+                    try {
+                        if (payable.getExpenseId() > 0) {
+                            Expense expense = db.financeDao().getExpenseById(payable.getExpenseId());
+                            if (expense == null) throw new IllegalStateException("Linked expense was not found.");
+                            new ExpenseAccountingHelper(db).delete(expense);
+                        } else {
+                            new FinanceTransactionService(db).voidPayable(
+                                    payable.getId(), reason.getText().toString(), true);
+                        }
+                        load();
+                    } catch (RuntimeException e) {
+                        android.widget.Toast.makeText(this, e.getMessage(), android.widget.Toast.LENGTH_LONG).show();
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     @Override protected void onResume() { super.onResume(); load(); }

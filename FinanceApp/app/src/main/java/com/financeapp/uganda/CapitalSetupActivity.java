@@ -7,16 +7,13 @@ import android.widget.Toast;
 import com.financeapp.uganda.accounting.AccountCodes;
 import com.financeapp.uganda.accounting.AccountingService;
 import com.financeapp.uganda.database.AppDatabase;
+import com.financeapp.uganda.utils.MobileMoneyPaymentUi;
+import com.financeapp.uganda.utils.PaymentMethods;
 import com.financeapp.uganda.utils.PrefsHelper;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 
 public class CapitalSetupActivity extends BaseToolbarActivity {
-
-    private static final String[] PAYMENT_LABELS = {"Cash", "Mobile Money", "Bank Transfer"};
-    private static final int[] PAYMENT_ACCOUNT_IDS = {
-            AccountCodes.CASH, AccountCodes.MOBILE_MONEY, AccountCodes.BANK
-    };
 
     private AccountingService accounting;
     private boolean requiredSetup;
@@ -31,19 +28,24 @@ public class CapitalSetupActivity extends BaseToolbarActivity {
 
         TextInputEditText etAmount = findViewById(R.id.etAmount);
         Spinner spinner = findViewById(R.id.spinnerAccount);
+        TextInputEditText etReference = findViewById(R.id.etTransactionReference);
+        android.widget.TextView tvReceivingNumber = findViewById(R.id.tvReceivingNumber);
         MaterialButton btnSave = findViewById(R.id.btnSave);
 
-        spinner.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, PAYMENT_LABELS));
+        spinner.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item,
+            PaymentMethods.options(false, false)));
+        MobileMoneyPaymentUi.bind(this, spinner, etReference,
+            findViewById(R.id.tilTransactionReference), tvReceivingNumber, true);
 
         if (accounting.hasInitialCapital()) {
             etAmount.setText(String.valueOf((long) accounting.getInitialCapitalBalance()));
             btnSave.setText("Update Initial Capital");
         }
 
-        btnSave.setOnClickListener(v -> saveCapital(etAmount, spinner));
+        btnSave.setOnClickListener(v -> saveCapital(etAmount, spinner, etReference));
     }
 
-    private void saveCapital(TextInputEditText etAmount, Spinner spinner) {
+    private void saveCapital(TextInputEditText etAmount, Spinner spinner, TextInputEditText etReference) {
         String amountStr = etAmount.getText() != null ? etAmount.getText().toString().trim() : "";
         if (amountStr.isEmpty()) {
             Toast.makeText(this, "Enter the opening capital amount", Toast.LENGTH_SHORT).show();
@@ -56,8 +58,14 @@ public class CapitalSetupActivity extends BaseToolbarActivity {
             Toast.makeText(this, "Invalid amount", Toast.LENGTH_SHORT).show();
             return;
         }
-        int accountId = PAYMENT_ACCOUNT_IDS[spinner.getSelectedItemPosition()];
-        String label = PAYMENT_LABELS[spinner.getSelectedItemPosition()];
+        String paymentMethod = spinner.getSelectedItem().toString();
+        String reference = etReference.getText() != null ? etReference.getText().toString().trim() : "";
+        if (PaymentMethods.isMobileMoney(paymentMethod) && reference.isEmpty()) {
+            Toast.makeText(this, "Enter the MTN/Airtel transaction reference.", Toast.LENGTH_LONG).show();
+            return;
+        }
+        int accountId = accounting.paymentAccountId(paymentMethod);
+        String label = reference.isEmpty() ? paymentMethod : paymentMethod + " · " + reference;
         try {
             if (accounting.hasInitialCapital()) {
                 accounting.updateInitialCapital(amount, accountId, label);

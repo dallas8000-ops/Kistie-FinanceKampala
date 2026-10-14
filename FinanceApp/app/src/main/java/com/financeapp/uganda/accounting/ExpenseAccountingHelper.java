@@ -1,37 +1,28 @@
 package com.financeapp.uganda.accounting;
 
 import com.financeapp.uganda.database.FinanceDao;
+import com.financeapp.uganda.database.AppDatabase;
 import com.financeapp.uganda.models.Expense;
 
 public class ExpenseAccountingHelper {
 
-    private final FinanceDao dao;
-    private final AccountingService accounting;
+    private final AppDatabase database;
+    private final FinanceTransactionService transactions;
 
-    public ExpenseAccountingHelper(FinanceDao dao) {
-        this.dao = dao;
-        this.accounting = new AccountingService(dao);
+    public ExpenseAccountingHelper(AppDatabase database) {
+        this.database = database;
+        this.transactions = new FinanceTransactionService(database);
     }
 
     public void saveNew(Expense expense) {
-        long id = dao.insertExpense(expense);
-        expense.setId((int) id);
-        accounting.postExpense(expense);
-        dao.updateExpense(expense);
+        transactions.recordExpense(expense);
     }
 
     public void update(Expense expense) {
-        dao.updateExpense(expense);
-        if (expense.getJournalEntryId() > 0) {
-            accounting.updateExpenseAccounting(expense);
-        } else {
-            accounting.postExpense(expense);
-            dao.updateExpense(expense);
-        }
+        transactions.replaceExpense(expense.getId(), expense, "Expense edited", false);
     }
 
     public void delete(Expense expense) {
-        accounting.deleteExpenseAccounting(expense);
-        dao.deleteExpense(expense);
+        transactions.voidExpense(expense.getId(), "Voided from expense history", true);
     }
 }

@@ -65,6 +65,10 @@ public class ShipmentAdapter extends RecyclerView.Adapter<ShipmentAdapter.Shipme
                 textColor = R.color.warning;
                 bgRes = R.drawable.bg_chip_warning;
                 break;
+            case "partially_received":
+                textColor = R.color.info;
+                bgRes = R.drawable.bg_chip_info;
+                break;
             case "ordered":
                 textColor = R.color.info;
                 bgRes = R.drawable.bg_chip_info;

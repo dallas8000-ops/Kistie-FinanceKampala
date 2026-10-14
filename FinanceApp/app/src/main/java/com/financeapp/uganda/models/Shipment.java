@@ -1,5 +1,6 @@
 package com.financeapp.uganda.models;
 
+import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 import androidx.room.TypeConverters;
@@ -32,6 +33,11 @@ public class Shipment {
     private String trackingNumber;
     private String notes;
     private boolean isDelivered;
+    private Date stockReceivedAt;
+    @ColumnInfo(defaultValue = "0")
+    private int payableId;
+    @ColumnInfo(defaultValue = "0")
+    private int journalEntryId;
 
     public Shipment() {}
 
@@ -79,6 +85,12 @@ public class Shipment {
     public void setNotes(String notes) { this.notes = notes; }
     public boolean isDelivered() { return isDelivered; }
     public void setDelivered(boolean delivered) { isDelivered = delivered; }
+    public Date getStockReceivedAt() { return stockReceivedAt; }
+    public void setStockReceivedAt(Date stockReceivedAt) { this.stockReceivedAt = stockReceivedAt; }
+    public int getPayableId() { return payableId; }
+    public void setPayableId(int payableId) { this.payableId = payableId; }
+    public int getJournalEntryId() { return journalEntryId; }
+    public void setJournalEntryId(int journalEntryId) { this.journalEntryId = journalEntryId; }
 
     public double getTotalImportCost() {
         return totalValue + shippingCost + insuranceCost + importDuty + vat + clearingCharges + transportToStore;

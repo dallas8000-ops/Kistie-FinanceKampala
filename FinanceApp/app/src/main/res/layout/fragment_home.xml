@@ -12,6 +12,16 @@
         android:orientation="vertical"
         android:paddingBottom="@dimen/spacing_xl">
 
+        <TextView
+            style="@style/Text.Headline"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/spacing_md"
+            android:layout_marginTop="@dimen/spacing_md"
+            android:layout_marginEnd="@dimen/spacing_md"
+            android:layout_marginBottom="@dimen/spacing_sm"
+            android:text="Business overview" />
+
         <include layout="@layout/include_capital_card" />
 
         <GridLayout

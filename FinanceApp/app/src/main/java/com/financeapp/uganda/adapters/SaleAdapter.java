@@ -43,9 +43,16 @@ public class SaleAdapter extends RecyclerView.Adapter<SaleAdapter.Holder> {
         h.tvCategory.setText(s.getPaymentMethod());
         h.tvAmount.setText(CurrencyFormatter.formatUGX(s.getTotalAmount()));
         h.tvDate.setText(s.getSaleDate() != null ? fmt.format(s.getSaleDate()) : "");
-        h.tvStatus.setVisibility(View.GONE);
+        if ("VOID".equals(s.getStatus())) {
+            h.tvStatus.setVisibility(View.VISIBLE);
+            h.tvStatus.setText("VOID");
+        } else {
+            h.tvStatus.setVisibility(View.GONE);
+        }
         h.tvSource.setVisibility(View.VISIBLE);
-        h.tvSource.setText("Profit: " + CurrencyFormatter.formatUGX(s.getProfit()));
+        h.tvSource.setText("Paid " + CurrencyFormatter.formatUGX(s.getAmountPaid())
+                + "  ·  Due " + CurrencyFormatter.formatUGX(s.getTotalAmount() - s.getAmountPaid())
+                + "  ·  Profit " + CurrencyFormatter.formatUGX(s.getProfit()));
     }
 
     @Override

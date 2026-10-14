@@ -1,52 +1,52 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Brand -->
-    <color name="primary">#0F2744</color>
-    <color name="primary_dark">#091A2E</color>
-    <color name="primary_light">#1E3A5F</color>
-    <color name="accent">#C9A227</color>
-    <color name="accent_light">#F5E6B8</color>
+    <color name="primary">#174A3A</color>
+    <color name="primary_dark">#0D3026</color>
+    <color name="primary_light">#2B6854</color>
+    <color name="accent">#E8B943</color>
+    <color name="accent_light">#F8E8B5</color>
 
     <!-- Surfaces -->
-    <color name="background">#F4F6F9</color>
+    <color name="background">#F2F6F3</color>
     <color name="surface">#FFFFFF</color>
     <color name="surface_elevated">#FFFFFF</color>
-    <color name="divider">#E2E8F0</color>
+    <color name="divider">#DEE7E1</color>
 
     <!-- Text -->
-    <color name="text_primary">#0F172A</color>
-    <color name="text_secondary">#64748B</color>
-    <color name="text_hint">#94A3B8</color>
+    <color name="text_primary">#17251F</color>
+    <color name="text_secondary">#617168</color>
+    <color name="text_hint">#87958C</color>
     <color name="text_on_primary">#FFFFFF</color>
-    <color name="text_on_accent">#0F172A</color>
+    <color name="text_on_accent">#17251F</color>
 
     <!-- Semantic -->
-    <color name="success">#059669</color>
-    <color name="success_bg">#D1FAE5</color>
-    <color name="danger">#DC2626</color>
-    <color name="danger_bg">#FEE2E2</color>
-    <color name="warning">#D97706</color>
-    <color name="warning_bg">#FEF3C7</color>
-    <color name="info">#0284C7</color>
-    <color name="info_bg">#E0F2FE</color>
+    <color name="success">#18764F</color>
+    <color name="success_bg">#DDF1E6</color>
+    <color name="danger">#B8424A</color>
+    <color name="danger_bg">#FBE7E8</color>
+    <color name="warning">#A75B17</color>
+    <color name="warning_bg">#FFF0D7</color>
+    <color name="info">#216B82</color>
+    <color name="info_bg">#E0F0F4</color>
 
     <!-- Stat card tints -->
-    <color name="stat_sales_bg">#E0F2FE</color>
-    <color name="stat_sales_icon">#0284C7</color>
-    <color name="stat_profit_bg">#D1FAE5</color>
-    <color name="stat_profit_icon">#059669</color>
-    <color name="stat_expense_bg">#FEE2E2</color>
-    <color name="stat_expense_icon">#DC2626</color>
-    <color name="stat_inventory_bg">#FEF3C7</color>
-    <color name="stat_inventory_icon">#D97706</color>
+    <color name="stat_sales_bg">#E0F0F4</color>
+    <color name="stat_sales_icon">#216B82</color>
+    <color name="stat_profit_bg">#DDF1E6</color>
+    <color name="stat_profit_icon">#18764F</color>
+    <color name="stat_expense_bg">#FBE7E8</color>
+    <color name="stat_expense_icon">#B8424A</color>
+    <color name="stat_inventory_bg">#FFF0D7</color>
+    <color name="stat_inventory_icon">#A75B17</color>
 
     <!-- Legacy aliases (charts/adapters) -->
-    <color name="purple_200">#C9A227</color>
-    <color name="purple_500">#0F2744</color>
-    <color name="purple_700">#091A2E</color>
-    <color name="teal_200">#C9A227</color>
-    <color name="teal_500">#059669</color>
-    <color name="teal_700">#047857</color>
-    <color name="black">#0F172A</color>
+    <color name="purple_200">#E8B943</color>
+    <color name="purple_500">#174A3A</color>
+    <color name="purple_700">#0D3026</color>
+    <color name="teal_200">#E8B943</color>
+    <color name="teal_500">#18764F</color>
+    <color name="teal_700">#125B3D</color>
+    <color name="black">#17251F</color>
     <color name="white">#FFFFFF</color>
 </resources>

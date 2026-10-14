@@ -15,8 +15,8 @@ public interface FinanceDao {
     @Query("SELECT * FROM expenses ORDER BY date DESC") List<Expense> getAllExpenses();
     @Query("SELECT * FROM expenses WHERE category = :category ORDER BY date DESC") List<Expense> getExpensesByCategory(String category);
     @Query("SELECT * FROM expenses WHERE shipmentStatus = :status ORDER BY date DESC") List<Expense> getExpensesByShipmentStatus(String status);
-    @Query("SELECT SUM(amount) FROM expenses WHERE category = :category") double getTotalByCategory(String category);
-    @Query("SELECT SUM(amount) FROM expenses WHERE date BETWEEN :startDate AND :endDate") double getTotalExpensesBetweenDates(Date startDate, Date endDate);
+    @Query("SELECT COALESCE(SUM(amount),0) FROM expenses WHERE category = :category AND status = 'POSTED'") double getTotalByCategory(String category);
+    @Query("SELECT COALESCE(SUM(amount),0) FROM expenses WHERE date BETWEEN :startDate AND :endDate AND status = 'POSTED'") double getTotalExpensesBetweenDates(Date startDate, Date endDate);
     @Query("SELECT * FROM expenses WHERE importSource = :source ORDER BY date DESC") List<Expense> getExpensesByImportSource(String source);
     @Query("SELECT * FROM expenses WHERE id = :id") Expense getExpenseById(int id);
 
@@ -29,7 +29,7 @@ public interface FinanceDao {
     @Query("SELECT * FROM inventory WHERE quantity <= minStockLevel") List<InventoryItem> getLowStockItems();
     @Query("SELECT * FROM inventory WHERE category = :category") List<InventoryItem> getInventoryByCategory(String category);
     @Query("SELECT * FROM inventory WHERE importSource = :source") List<InventoryItem> getInventoryBySource(String source);
-    @Query("SELECT SUM(quantity * unitCost) FROM inventory") double getTotalInventoryValue();
+    @Query("SELECT COALESCE(SUM(quantity * (unitCost + shippingCost + importDuty + clearingCost)),0) FROM inventory") double getTotalInventoryValue();
     @Query("SELECT SUM(quantity) FROM inventory") int getTotalStockCount();
 
     // --- Shipments ---
@@ -40,6 +40,21 @@ public interface FinanceDao {
     @Query("SELECT * FROM shipments WHERE status = :status") List<Shipment> getShipmentsByStatus(String status);
     @Query("SELECT * FROM shipments WHERE sourceCountry = :country") List<Shipment> getShipmentsBySource(String country);
     @Query("SELECT * FROM shipments WHERE batchId = :batchId") Shipment getShipmentByBatchId(String batchId);
+    @Query("SELECT * FROM shipments WHERE id = :id") Shipment getShipmentById(int id);
+    @Insert long insertShipmentLine(ShipmentLine line);
+    @Update void updateShipmentLine(ShipmentLine line);
+    @Query("SELECT * FROM shipment_lines WHERE id = :id") ShipmentLine getShipmentLineById(int id);
+    @Query("SELECT * FROM shipment_lines WHERE shipmentId = :shipmentId ORDER BY id") List<ShipmentLine> getShipmentLines(int shipmentId);
+    @Insert long insertShipmentReceipt(ShipmentReceipt receipt);
+    @Insert void insertShipmentReceiptLines(List<ShipmentReceiptLine> lines);
+    @Query("SELECT * FROM shipment_receipts WHERE id = :id") ShipmentReceipt getShipmentReceiptById(int id);
+    @Query("SELECT * FROM shipment_receipts WHERE reference = :reference LIMIT 1") ShipmentReceipt getShipmentReceiptByReference(String reference);
+    @Query("SELECT * FROM shipment_receipts WHERE shipmentId = :shipmentId ORDER BY receivedAt, id") List<ShipmentReceipt> getShipmentReceipts(int shipmentId);
+    @Query("SELECT * FROM shipment_receipt_lines WHERE receiptId = :receiptId ORDER BY id") List<ShipmentReceiptLine> getShipmentReceiptLines(int receiptId);
+        @Query("SELECT receipt_lines.* FROM shipment_receipt_lines AS receipt_lines "
+            + "INNER JOIN shipment_receipts AS receipts ON receipts.id = receipt_lines.receiptId "
+            + "WHERE receipt_lines.shipmentLineId = :shipmentLineId ORDER BY receipts.receivedAt, receipt_lines.id")
+        List<ShipmentReceiptLine> getShipmentReceiptLinesForShipmentLine(int shipmentLineId);
 
     // --- Sales ---
     @Insert long insertSale(Sale sale);
@@ -47,11 +62,19 @@ public interface FinanceDao {
     @Delete void deleteSale(Sale sale);
     @Query("SELECT * FROM sales ORDER BY saleDate DESC") List<Sale> getAllSales();
     @Query("SELECT * FROM sales WHERE id = :id") Sale getSaleById(int id);
-    @Query("SELECT * FROM sales WHERE saleDate BETWEEN :startDate AND :endDate") List<Sale> getSalesBetweenDates(Date startDate, Date endDate);
-    @Query("SELECT SUM(totalAmount) FROM sales WHERE saleDate BETWEEN :startDate AND :endDate") double getTotalSalesBetweenDates(Date startDate, Date endDate);
-    @Query("SELECT SUM(profit) FROM sales WHERE saleDate BETWEEN :startDate AND :endDate") double getTotalProfitBetweenDates(Date startDate, Date endDate);
-    @Query("SELECT SUM(totalAmount) FROM sales") double getTotalSales();
-    @Query("SELECT SUM(profit) FROM sales") double getTotalProfit();
+    @Query("SELECT * FROM sales WHERE saleDate BETWEEN :startDate AND :endDate AND status = 'POSTED'") List<Sale> getSalesBetweenDates(Date startDate, Date endDate);
+    @Query("SELECT COALESCE(SUM(totalAmount),0) FROM sales WHERE saleDate BETWEEN :startDate AND :endDate AND status = 'POSTED'") double getTotalSalesBetweenDates(Date startDate, Date endDate);
+    @Query("SELECT COALESCE(SUM(profit),0) FROM sales WHERE saleDate BETWEEN :startDate AND :endDate AND status = 'POSTED'") double getTotalProfitBetweenDates(Date startDate, Date endDate);
+    @Query("SELECT COALESCE(SUM(totalAmount),0) FROM sales WHERE status = 'POSTED'") double getTotalSales();
+    @Query("SELECT COALESCE(SUM(profit),0) FROM sales WHERE status = 'POSTED'") double getTotalProfit();
+        @Query("SELECT COUNT(*) FROM sales AS sale WHERE sale.status = 'POSTED' AND "
+            + "(sale.journalEntryId = 0 OR NOT EXISTS "
+            + "(SELECT 1 FROM journal_entries AS journal WHERE journal.id = sale.journalEntryId))")
+        int getLegacySaleCount();
+        @Query("SELECT COUNT(*) FROM expenses AS expense WHERE expense.status = 'POSTED' AND "
+            + "(expense.journalEntryId = 0 OR NOT EXISTS "
+            + "(SELECT 1 FROM journal_entries AS journal WHERE journal.id = expense.journalEntryId))")
+        int getLegacyExpenseCount();
 
     // --- Chart of Accounts ---
     @Insert void insertAccount(Account account);
@@ -89,6 +112,9 @@ public interface FinanceDao {
     @Query("SELECT * FROM accounts_receivable WHERE status IN ('OPEN','PARTIAL') ORDER BY dueDate") List<AccountReceivable> getOpenReceivables();
     @Query("SELECT * FROM accounts_receivable WHERE id = :id") AccountReceivable getReceivableById(int id);
     @Query("SELECT COALESCE(SUM(amount - amountPaid),0) FROM accounts_receivable WHERE status IN ('OPEN','PARTIAL')") double getTotalReceivableBalance();
+    @Insert long insertReceivablePayment(ReceivablePayment payment);
+    @Update void updateReceivablePayment(ReceivablePayment payment);
+    @Query("SELECT * FROM receivable_payments WHERE receivableId = :receivableId ORDER BY paidAt, id") List<ReceivablePayment> getReceivablePayments(int receivableId);
 
     // --- Accounts Payable ---
     @Insert long insertPayable(AccountPayable ap);
@@ -98,4 +124,7 @@ public interface FinanceDao {
     @Query("SELECT * FROM accounts_payable WHERE status IN ('OPEN','PARTIAL') ORDER BY dueDate") List<AccountPayable> getOpenPayables();
     @Query("SELECT * FROM accounts_payable WHERE id = :id") AccountPayable getPayableById(int id);
     @Query("SELECT COALESCE(SUM(amount - amountPaid),0) FROM accounts_payable WHERE status IN ('OPEN','PARTIAL')") double getTotalPayableBalance();
+    @Insert long insertPayablePayment(PayablePayment payment);
+    @Update void updatePayablePayment(PayablePayment payment);
+    @Query("SELECT * FROM payable_payments WHERE payableId = :payableId ORDER BY paidAt, id") List<PayablePayment> getPayablePayments(int payableId);
 }

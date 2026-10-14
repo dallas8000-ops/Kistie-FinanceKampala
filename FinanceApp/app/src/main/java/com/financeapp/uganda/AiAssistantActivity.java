@@ -49,7 +49,10 @@ public class AiAssistantActivity extends BaseToolbarActivity {
                 @Override
                 public void onError(String error) {
                     runOnUiThread(() -> {
-                        Toast.makeText(AiAssistantActivity.this, error, Toast.LENGTH_LONG).show();
+                        String visibleError = error == null || error.trim().isEmpty()
+                                ? "Unknown assistant error." : error.trim();
+                        appendChat("Assistant error: " + visibleError + "\n\n");
+                        Toast.makeText(AiAssistantActivity.this, visibleError, Toast.LENGTH_LONG).show();
                         btnSend.setEnabled(true);
                     });
                 }

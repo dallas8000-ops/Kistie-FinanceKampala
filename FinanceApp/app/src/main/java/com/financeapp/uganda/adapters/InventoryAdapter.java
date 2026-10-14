@@ -43,8 +43,8 @@ public class InventoryAdapter extends RecyclerView.Adapter<InventoryAdapter.Inve
         InventoryItem item = items.get(position);
         holder.tvName.setText(item.getName());
         holder.tvCategory.setText(item.getCategory());
-        holder.tvPrice.setText("Cost: " + CurrencyFormatter.formatUGX(item.getUnitCost()));
-        holder.tvSellingPrice.setText("Sell: " + CurrencyFormatter.formatUGX(item.getSellingPrice()));
+        holder.tvPrice.setText(CurrencyFormatter.formatUGX(item.getUnitCost()));
+        holder.tvSellingPrice.setText(CurrencyFormatter.formatUGX(item.getSellingPrice()));
 
         if (item.getQuantity() <= item.getMinStockLevel()) {
             holder.tvQuantity.setBackgroundResource(R.drawable.bg_chip_danger);
@@ -57,7 +57,7 @@ public class InventoryAdapter extends RecyclerView.Adapter<InventoryAdapter.Inve
         }
 
         holder.tvSource.setText("Source: " + (item.getImportSource() != null ? item.getImportSource() : "Local"));
-        holder.tvProfit.setText("Profit: " + CurrencyFormatter.formatUGX(item.getProfitMargin()));
+        holder.tvProfit.setText(CurrencyFormatter.formatUGX(item.getProfitMargin()));
     }
 
     @Override

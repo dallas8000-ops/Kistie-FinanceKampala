@@ -30,33 +30,6 @@
             android:orientation="vertical"
             android:padding="@dimen/spacing_md">
 
-            <com.google.android.material.card.MaterialCardView
-                style="@style/Card.Dashboard"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="@dimen/spacing_md">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="@dimen/spacing_md">
-
-                    <TextView
-                        style="@style/Text.StatLabel"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Sale Details" />
-
-                    <TextView
-                        style="@style/Text.Caption"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="Select item and enter sale information" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
             <TextView style="@style/Text.Caption" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Inventory Item" />
             <Spinner
                 android:id="@+id/spinnerItem"
@@ -119,12 +92,62 @@
                 android:paddingStart="8dp"
                 android:paddingEnd="8dp" />
 
+            <TextView
+                android:id="@+id/tvReceivingNumber"
+                style="@style/Text.Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_sm"
+                android:background="@color/info_bg"
+                android:padding="@dimen/spacing_sm"
+                android:visibility="gone" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilTransactionReference"
+                style="@style/TextInput.Finance"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_sm"
+                android:hint="Mobile Money transaction reference"
+                android:visibility="gone">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etTransactionReference"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textCapCharacters" />
+            </com.google.android.material.textfield.TextInputLayout>
+
             <com.google.android.material.textfield.TextInputLayout
                 style="@style/TextInput.Finance"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/spacing_md"
-                android:hint="Customer Name (optional)">
+                android:hint="Received Now (UGX, blank means paid in full)">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etAmountPaid"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView
+                android:id="@+id/tvBalanceDue"
+                style="@style/Text.Title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_sm"
+                android:background="@drawable/bg_summary_banner"
+                android:padding="@dimen/spacing_md"
+                android:text="Balance due: UGX 0"
+                android:textColor="@color/warning" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/TextInput.Finance"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_md"
+                android:hint="Customer Name (required if balance is due)">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etCustomerName"
@@ -153,6 +176,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/spacing_lg"
+                app:icon="@drawable/ic_sales"
+                app:iconTint="@color/text_on_accent"
+                app:iconGravity="textStart"
                 android:text="Save Sale" />
 
         </LinearLayout>

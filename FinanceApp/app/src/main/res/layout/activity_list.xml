@@ -25,31 +25,38 @@
         android:orientation="vertical"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
-        <LinearLayout
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="@dimen/spacing_md"
-            android:background="@drawable/bg_summary_banner"
-            android:orientation="vertical"
-            android:padding="@dimen/spacing_md">
+            app:cardBackgroundColor="@color/surface"
+            app:cardCornerRadius="@dimen/radius_md"
+            app:cardElevation="1dp"
+            app:strokeColor="@color/divider"
+            app:strokeWidth="1dp">
 
-            <TextView
-                style="@style/Text.Caption"
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="SUMMARY"
-                android:textAllCaps="true"
-                android:letterSpacing="0.06" />
+                android:orientation="vertical"
+                android:padding="@dimen/spacing_md">
 
-            <TextView
-                android:id="@+id/tvTotal"
-                style="@style/Text.Title"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Total: UGX 0"
-                android:textColor="@color/primary" />
-        </LinearLayout>
+                <TextView
+                    style="@style/Text.StatLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="SUMMARY" />
+
+                <TextView
+                    android:id="@+id/tvTotal"
+                    style="@style/Text.StatValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Total: UGX 0"
+                    android:textColor="@color/primary" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerView"
@@ -57,6 +64,7 @@
             android:layout_height="match_parent"
             android:clipToPadding="false"
             android:paddingStart="@dimen/spacing_sm"
+            android:paddingTop="@dimen/spacing_xs"
             android:paddingEnd="@dimen/spacing_sm"
             android:paddingBottom="80dp" />
     </LinearLayout>

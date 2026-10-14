@@ -2,6 +2,7 @@ package com.financeapp.uganda.accounting;
 
 import com.financeapp.uganda.database.FinanceDao;
 import com.financeapp.uganda.models.*;
+import com.financeapp.uganda.utils.PaymentMethods;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -18,20 +19,23 @@ public class AccountingService {
     public int paymentAccountId(String paymentMethod) {
         if (paymentMethod == null) return AccountCodes.CASH;
         switch (paymentMethod) {
-            case "Mobile Money": return AccountCodes.MOBILE_MONEY;
-            case "Bank Transfer":
-            case "Cheque": return AccountCodes.BANK;
-            case "Credit": return AccountCodes.ACCOUNTS_RECEIVABLE;
+            case "Mobile Money":
+            case PaymentMethods.MTN_MOMO:
+            case PaymentMethods.AIRTEL_MONEY: return AccountCodes.MOBILE_MONEY;
+            case PaymentMethods.BANK_TRANSFER:
+            case PaymentMethods.CHEQUE: return AccountCodes.BANK;
+            case PaymentMethods.CREDIT: return AccountCodes.ACCOUNTS_RECEIVABLE;
+            case PaymentMethods.CASH:
             default: return AccountCodes.CASH;
         }
     }
 
     public boolean isCreditPayment(String paymentMethod) {
-        return "Credit".equals(paymentMethod);
+        return PaymentMethods.CREDIT.equals(paymentMethod);
     }
 
     public boolean isPayablePayment(String paymentMethod) {
-        return "Credit".equals(paymentMethod);
+        return PaymentMethods.CREDIT.equals(paymentMethod);
     }
 
     public boolean hasInitialCapital() {
@@ -81,6 +85,8 @@ public class AccountingService {
     public void postExpense(Expense expense) {
         int creditAccount = isPayablePayment(expense.getPaymentMethod())
                 ? AccountCodes.ACCOUNTS_PAYABLE : paymentAccountId(expense.getPaymentMethod());
+        int debitAccount = "household".equals(expense.getCategory())
+            ? AccountCodes.OWNER_DRAWINGS : AccountCodes.OPERATING_EXPENSE;
 
         JournalEntry entry = createEntry(expense.getDate(),
                 expense.getDescription(),
@@ -88,7 +94,7 @@ public class AccountingService {
                 "EXPENSE", expense.getId());
 
         List<JournalLine> lines = new ArrayList<>();
-        lines.add(new JournalLine((int) entry.getId(), AccountCodes.OPERATING_EXPENSE, expense.getAmount(), 0,
+        lines.add(new JournalLine((int) entry.getId(), debitAccount, expense.getAmount(), 0,
                 expense.getSubCategory()));
         lines.add(new JournalLine((int) entry.getId(), creditAccount, 0, expense.getAmount(),
                 expense.getPaymentMethod()));
@@ -150,8 +156,10 @@ public class AccountingService {
     private void repostExpenseLines(Expense expense, JournalEntry entry) {
         int creditAccount = isPayablePayment(expense.getPaymentMethod())
                 ? AccountCodes.ACCOUNTS_PAYABLE : paymentAccountId(expense.getPaymentMethod());
+        int debitAccount = "household".equals(expense.getCategory())
+            ? AccountCodes.OWNER_DRAWINGS : AccountCodes.OPERATING_EXPENSE;
         List<JournalLine> lines = new ArrayList<>();
-        lines.add(new JournalLine(entry.getId(), AccountCodes.OPERATING_EXPENSE, expense.getAmount(), 0,
+        lines.add(new JournalLine(entry.getId(), debitAccount, expense.getAmount(), 0,
                 expense.getSubCategory()));
         lines.add(new JournalLine(entry.getId(), creditAccount, 0, expense.getAmount(),
                 expense.getPaymentMethod()));
@@ -174,12 +182,11 @@ public class AccountingService {
         }
     }
 
-    /** Post sale with COGS: Dr Cash/AR + Dr COGS, Cr Revenue + Cr Inventory */
-    public void postSale(Sale sale, InventoryItem item, boolean onCredit) {
-        double cogs = item.getUnitCost() * sale.getQuantitySold();
+    /** Post sale with its deposit, receivable balance, and landed cost. */
+    public void postSale(Sale sale, InventoryItem item, double amountPaid) {
+        double cogs = item.getTotalCost() * sale.getQuantitySold();
         sale.setCostOfGoodsSold(cogs);
-
-        int debitAccount = onCredit ? AccountCodes.ACCOUNTS_RECEIVABLE : paymentAccountId(sale.getPaymentMethod());
+        double balanceDue = sale.getTotalAmount() - amountPaid;
 
         JournalEntry entry = createEntry(sale.getSaleDate(),
                 "Sale: " + sale.getItemName(),
@@ -187,7 +194,14 @@ public class AccountingService {
                 "SALE", sale.getId());
 
         List<JournalLine> lines = new ArrayList<>();
-        lines.add(new JournalLine((int) entry.getId(), debitAccount, sale.getTotalAmount(), 0, "Sale receipt"));
+    if (amountPaid > 0) {
+        lines.add(new JournalLine((int) entry.getId(), paymentAccountId(sale.getPaymentMethod()),
+            amountPaid, 0, "Sale deposit"));
+    }
+    if (balanceDue > 0) {
+        lines.add(new JournalLine((int) entry.getId(), AccountCodes.ACCOUNTS_RECEIVABLE,
+            balanceDue, 0, "Sale balance due"));
+    }
         lines.add(new JournalLine((int) entry.getId(), AccountCodes.SALES_REVENUE, 0, sale.getTotalAmount(), "Revenue"));
         if (cogs > 0) {
             lines.add(new JournalLine((int) entry.getId(), AccountCodes.COGS, cogs, 0, "COGS"));
@@ -196,26 +210,43 @@ public class AccountingService {
         insertBalancedLines(entry, lines);
         sale.setJournalEntryId((int) entry.getId());
 
-        if (onCredit) {
+        if (balanceDue > 0) {
             AccountReceivable ar = new AccountReceivable();
-            ar.setCustomerName(sale.getCustomerName() != null ? sale.getCustomerName() : "Customer");
+            ar.setCustomerName(sale.getCustomerName());
             ar.setCustomerPhone(sale.getCustomerPhone());
             ar.setDescription("Sale: " + sale.getItemName());
             ar.setAmount(sale.getTotalAmount());
-            ar.setAmountPaid(0);
+            ar.setAmountPaid(amountPaid);
             ar.setInvoiceDate(sale.getSaleDate());
             ar.setDueDate(addDays(sale.getSaleDate(), 30));
-            ar.setStatus("OPEN");
+            ar.setStatus(amountPaid > 0 ? "PARTIAL" : "OPEN");
             ar.setJournalEntryId((int) entry.getId());
             ar.setSaleId(sale.getId());
             long arId = dao.insertReceivable(ar);
             sale.setReceivableId((int) arId);
+
+            if (amountPaid > 0) {
+                ReceivablePayment deposit = new ReceivablePayment();
+                deposit.setReceivableId((int) arId);
+                deposit.setAmount(amountPaid);
+                deposit.setPaymentMethod(sale.getPaymentMethod());
+                deposit.setPaidAt(sale.getSaleDate());
+                deposit.setReference(sale.getTransactionId());
+                deposit.setJournalEntryId((int) entry.getId());
+                dao.insertReceivablePayment(deposit);
+            }
         }
         dao.updateSale(sale);
     }
 
-    public void recordReceivablePayment(AccountReceivable ar, double amount, String paymentMethod) {
-        JournalEntry entry = createEntry(new Date(),
+    public long recordReceivablePayment(AccountReceivable ar, double amount, String paymentMethod) {
+        return recordReceivablePayment(ar, amount, paymentMethod, new Date(), null);
+    }
+
+    public long recordReceivablePayment(AccountReceivable ar, double amount, String paymentMethod,
+                                       Date paidAt, String reference) {
+        Date paymentDate = paidAt != null ? paidAt : new Date();
+        JournalEntry entry = createEntry(paymentDate,
                 "Payment from " + ar.getCustomerName(),
                 "AR-PAY-" + ar.getId(),
                 "PAYMENT", ar.getId());
@@ -229,10 +260,25 @@ public class AccountingService {
         ar.setAmountPaid(ar.getAmountPaid() + amount);
         ar.setStatus(ar.getAmountPaid() >= ar.getAmount() ? "PAID" : "PARTIAL");
         dao.updateReceivable(ar);
+        ReceivablePayment payment = new ReceivablePayment();
+        payment.setReceivableId(ar.getId());
+        payment.setAmount(amount);
+        payment.setPaymentMethod(paymentMethod);
+        payment.setPaidAt(paymentDate);
+        payment.setReference(reference);
+        payment.setJournalEntryId((int) entry.getId());
+        dao.insertReceivablePayment(payment);
+        return entry.getId();
     }
 
-    public void recordPayablePayment(AccountPayable ap, double amount, String paymentMethod) {
-        JournalEntry entry = createEntry(new Date(),
+    public long recordPayablePayment(AccountPayable ap, double amount, String paymentMethod) {
+        return recordPayablePayment(ap, amount, paymentMethod, new Date(), null);
+    }
+
+    public long recordPayablePayment(AccountPayable ap, double amount, String paymentMethod,
+                                     Date paidAt, String reference) {
+        Date paymentDate = paidAt != null ? paidAt : new Date();
+        JournalEntry entry = createEntry(paymentDate,
                 "Payment to " + ap.getVendorName(),
                 "AP-PAY-" + ap.getId(),
                 "PAYMENT", ap.getId());
@@ -246,6 +292,32 @@ public class AccountingService {
         ap.setAmountPaid(ap.getAmountPaid() + amount);
         ap.setStatus(ap.getAmountPaid() >= ap.getAmount() ? "PAID" : "PARTIAL");
         dao.updatePayable(ap);
+        PayablePayment payment = new PayablePayment();
+        payment.setPayableId(ap.getId());
+        payment.setAmount(amount);
+        payment.setPaymentMethod(paymentMethod);
+        payment.setPaidAt(paymentDate);
+        payment.setReference(reference);
+        payment.setJournalEntryId((int) entry.getId());
+        dao.insertPayablePayment(payment);
+        return entry.getId();
+    }
+
+    public long reverseJournalEntry(int originalEntryId, String reason) {
+        JournalEntry original = dao.getJournalEntryById(originalEntryId);
+        if (original == null) throw new IllegalArgumentException("Original journal entry was not found.");
+        List<JournalLine> originalLines = dao.getLinesForEntry(originalEntryId);
+        if (originalLines.isEmpty()) throw new IllegalStateException("Original journal entry has no lines.");
+
+        JournalEntry reversal = createEntry(new Date(), "Reversal: " + reason,
+                "REV-" + originalEntryId, "REVERSAL", originalEntryId);
+        List<JournalLine> reversalLines = new ArrayList<>();
+        for (JournalLine line : originalLines) {
+            reversalLines.add(new JournalLine(reversal.getId(), line.getAccountId(),
+                    line.getCredit(), line.getDebit(), "Reversal: " + line.getMemo()));
+        }
+        insertBalancedLines(reversal, reversalLines);
+        return reversal.getId();
     }
 
     public void updateReceivable(AccountReceivable ar) {

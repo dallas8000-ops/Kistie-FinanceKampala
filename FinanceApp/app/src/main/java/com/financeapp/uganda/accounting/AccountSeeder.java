@@ -22,10 +22,16 @@ public final class AccountSeeder {
                     new Account(AccountCodes.INITIAL_CAPITAL, "3010", "Initial Capital", "EQUITY", true),
                     new Account(AccountCodes.SALES_REVENUE, "4000", "Sales Revenue", "REVENUE", true),
                     new Account(AccountCodes.COGS, "5000", "Cost of Goods Sold", "EXPENSE", true),
-                    new Account(AccountCodes.OPERATING_EXPENSE, "5100", "Operating Expenses", "EXPENSE", true)
+                    new Account(AccountCodes.OPERATING_EXPENSE, "5100", "Operating Expenses", "EXPENSE", true),
+                    new Account(AccountCodes.OWNER_DRAWINGS, "3020", "Owner Drawings", "EQUITY", true)
             ));
-        } else if (dao.getAccountById(AccountCodes.INITIAL_CAPITAL) == null) {
-            dao.insertAccount(new Account(AccountCodes.INITIAL_CAPITAL, "3010", "Initial Capital", "EQUITY", true));
+        } else {
+            if (dao.getAccountById(AccountCodes.INITIAL_CAPITAL) == null) {
+                dao.insertAccount(new Account(AccountCodes.INITIAL_CAPITAL, "3010", "Initial Capital", "EQUITY", true));
+            }
+            if (dao.getAccountById(AccountCodes.OWNER_DRAWINGS) == null) {
+                dao.insertAccount(new Account(AccountCodes.OWNER_DRAWINGS, "3020", "Owner Drawings", "EQUITY", true));
+            }
         }
     }
 }
