@@ -2,6 +2,8 @@ plugins {
     id 'com.android.application'
 }
 
+apply from: 'vscode-classpath.gradle'
+
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {

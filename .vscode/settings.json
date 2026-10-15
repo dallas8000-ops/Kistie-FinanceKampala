@@ -1,5 +1,5 @@
 {
   "java.import.gradle.enabled": true,
-  "java.import.maven.enabled": false,
-  "java.errors.incompleteClasspath.severity": "warning"
+  "java.import.gradle.wrapper.enabled": true,
+  "java.import.maven.enabled": false
 }
