@@ -42,8 +42,8 @@ Thumbs.db
 # Misc
 *.orig
 
-# Gradle Wrapper
-gradle/wrapper/gradle-wrapper.jar
+# Gradle Wrapper (must be committed)
+!gradle-wrapper.jar
 
 # Kotlin
 *.kotlin_module
