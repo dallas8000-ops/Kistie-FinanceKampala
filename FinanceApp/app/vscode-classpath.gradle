@@ -1,0 +1,61 @@
+// Copies the jars javac uses (android.jar, AndroidX/AAR classes, R.jar, test libraries) into
+// build/vscode-classpath so VS Code's Java extension can resolve them via .vscode/settings.json.
+// Re-run `gradlew vscodeClasspath` after changing dependencies.
+def vscodeClasspathDir = layout.buildDirectory.dir('vscode-classpath')
+def javaCompileTaskNames = [
+        'compileDebugJavaWithJavac',
+        'compileDebugUnitTestJavaWithJavac',
+        'compileDebugAndroidTestJavaWithJavac',
+]
+
+tasks.register('vscodeClasspath') {
+    group = 'ide'
+    description = 'Exports the debug compile classpath to build/vscode-classpath for VS Code.'
+    dependsOn 'generateDebugBuildConfig'
+    def compileTasks = javaCompileTaskNames.collect { tasks.named(it, JavaCompile) }
+    def jars = files(compileTasks.collectMany { task ->
+        [task.map { it.options.bootstrapClasspath ?: files() }, task.map { it.classpath }]
+    })
+    inputs.files(jars)
+    outputs.dir(vscodeClasspathDir)
+    doLast {
+        def outDir = vscodeClasspathDir.get().asFile
+        project.delete(outDir)
+        outDir.mkdirs()
+        def seen = [] as Set
+        jars.files.findAll { it.isFile() && it.name.endsWith('.jar') && seen.add(it.canonicalPath) }
+                .eachWithIndex { File jar, int i ->
+                    def owner = jar.parentFile?.parentFile?.name ?: 'lib'
+                    def target = new File(outDir, String.format('%03d-%s-%s', i, owner, jar.name))
+                    java.nio.file.Files.copy(jar.toPath(), target.toPath())
+                }
+        logger.lifecycle("Exported ${seen.size()} jars to ${outDir}")
+    }
+}
+
+// VS Code's Java extension imports Gradle projects through the Eclipse model, which knows nothing
+// about Android. Describe the sources and exported jars there so Android code resolves.
+apply plugin: 'eclipse'
+
+eclipse {
+    synchronizationTasks 'vscodeClasspath'
+    project {
+        natures 'org.eclipse.jdt.core.javanature'
+        buildCommand 'org.eclipse.jdt.core.javabuilder'
+    }
+    classpath {
+        defaultOutputDir = file('build/vscode-bin')
+        file {
+            whenMerged { cp ->
+                ['src/main/java', 'src/test/java', 'src/androidTest/java',
+                 'build/generated/source/buildConfig/debug'].each { path ->
+                    cp.entries.add(new org.gradle.plugins.ide.eclipse.model.SourceFolder(path, 'build/vscode-bin'))
+                }
+                def jars = vscodeClasspathDir.get().asFile.listFiles()?.findAll { it.name.endsWith('.jar') } ?: []
+                jars.sort { it.name }.each { jar ->
+                    cp.entries.add(new org.gradle.plugins.ide.eclipse.model.Library(cp.fileReference(jar)))
+                }
+            }
+        }
+    }
+}
