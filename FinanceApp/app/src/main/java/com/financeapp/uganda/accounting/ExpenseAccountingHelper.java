@@ -1,5 +1,6 @@
 package com.financeapp.uganda.accounting;
 
+import android.content.Context;
 import com.financeapp.uganda.database.FinanceDao;
 import com.financeapp.uganda.database.AppDatabase;
 import com.financeapp.uganda.models.Expense;
@@ -10,8 +11,12 @@ public class ExpenseAccountingHelper {
     private final FinanceTransactionService transactions;
 
     public ExpenseAccountingHelper(AppDatabase database) {
+        this(null, database);
+    }
+
+    public ExpenseAccountingHelper(Context context, AppDatabase database) {
         this.database = database;
-        this.transactions = new FinanceTransactionService(database);
+        this.transactions = new FinanceTransactionService(context, database);
     }
 
     public void saveNew(Expense expense) {

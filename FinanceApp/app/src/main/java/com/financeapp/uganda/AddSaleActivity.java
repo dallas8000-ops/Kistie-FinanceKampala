@@ -170,7 +170,7 @@ public class AddSaleActivity extends BaseToolbarActivity {
 
     private void saveSale(Sale sale) {
         try {
-            FinanceTransactionService transactions = new FinanceTransactionService(db);
+            FinanceTransactionService transactions = new FinanceTransactionService(this, db);
             if (originalSale == null) transactions.recordSale(sale);
             else transactions.replaceSale(originalSale.getId(), sale, true);
         } catch (IllegalArgumentException e) {

@@ -55,6 +55,37 @@ public interface FinanceDao {
             + "INNER JOIN shipment_receipts AS receipts ON receipts.id = receipt_lines.receiptId "
             + "WHERE receipt_lines.shipmentLineId = :shipmentLineId ORDER BY receipts.receivedAt, receipt_lines.id")
         List<ShipmentReceiptLine> getShipmentReceiptLinesForShipmentLine(int shipmentLineId);
+    
+        // --- Sync Outbox ---
+        @Insert long insertSyncOutboxEntry(SyncOutboxEntry entry);
+        @Update void updateSyncOutboxEntry(SyncOutboxEntry entry);
+        @Query("SELECT * FROM sync_outbox WHERE status = 'PENDING' AND nextAttemptAt <= :now "
+            + "ORDER BY createdAt, id LIMIT :limit")
+        List<SyncOutboxEntry> getPendingSyncEntries(long now, int limit);
+        @Query("SELECT COUNT(*) FROM sync_outbox WHERE status = 'PENDING'")
+        int getPendingSyncCount();
+        @Query("SELECT COUNT(*) FROM sync_outbox WHERE status = :status")
+        int getSyncCountByStatus(String status);
+        @Query("SELECT * FROM sync_outbox WHERE id = :id")
+        SyncOutboxEntry getSyncOutboxEntryById(int id);
+        @Query("UPDATE sync_outbox SET status = 'ACKNOWLEDGED', lastError = NULL "
+            + "WHERE id = :id AND status = 'PENDING'")
+        int markSyncOperationAcknowledged(int id);
+        @Query("UPDATE sync_outbox SET attempts = attempts + 1, nextAttemptAt = :nextAttemptAt, "
+            + "lastError = :error WHERE id = :id AND status = 'PENDING'")
+        int scheduleSyncOperationRetry(int id, long nextAttemptAt, String error);
+        @Query("UPDATE sync_outbox SET status = 'AUTH_REQUIRED', lastError = :error "
+            + "WHERE id = :id AND status = 'PENDING'")
+        int markSyncOperationAuthRequired(int id, String error);
+        @Query("UPDATE sync_outbox SET status = 'CONFLICT', lastError = :error "
+            + "WHERE id = :id AND status = 'PENDING'")
+        int markSyncOperationConflict(int id, String error);
+        @Query("UPDATE sync_outbox SET status = 'REJECTED', lastError = :error "
+            + "WHERE id = :id AND status = 'PENDING'")
+        int markSyncOperationRejected(int id, String error);
+        @Query("UPDATE sync_outbox SET status = 'PENDING', nextAttemptAt = 0, lastError = NULL "
+            + "WHERE status = 'AUTH_REQUIRED'")
+        int resetAuthRequiredSyncOperations();
 
     // --- Sales ---
     @Insert long insertSale(Sale sale);

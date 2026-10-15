@@ -97,7 +97,7 @@ public class SalesActivity extends BaseToolbarActivity {
                 .setView(reasonInput)
                 .setPositiveButton("Confirm refund and void", (dialog, which) -> {
                     try {
-                        new com.financeapp.uganda.accounting.FinanceTransactionService(db).voidSale(
+                        new com.financeapp.uganda.accounting.FinanceTransactionService(this, db).voidSale(
                                 sale.getId(), reasonInput.getText().toString(), true);
                         load();
                     } catch (IllegalArgumentException e) {

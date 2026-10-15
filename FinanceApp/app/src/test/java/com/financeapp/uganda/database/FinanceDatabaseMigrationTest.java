@@ -30,6 +30,24 @@ public class FinanceDatabaseMigrationTest {
     private static final String DATABASE_NAME = "finance-migration-test";
 
     @Test
+    public void currentSchemaConstantMatchesRoomDatabaseVersion() {
+        Context context = ApplicationProvider.getApplicationContext();
+        AppDatabase database = Room.inMemoryDatabaseBuilder(context, AppDatabase.class)
+                .addMigrations(AppDatabase.MIGRATION_3_4, AppDatabase.MIGRATION_4_5,
+                        AppDatabase.MIGRATION_5_6)
+                .allowMainThreadQueries()
+                .build();
+        try {
+            try (Cursor cursor = database.getOpenHelper().getReadableDatabase().query("PRAGMA user_version")) {
+                cursor.moveToFirst();
+                assertEquals(AppDatabase.CURRENT_SCHEMA_VERSION, cursor.getInt(0));
+            }
+        } finally {
+            database.close();
+        }
+    }
+
+    @Test
     public void versionThreeMigrationPreservesExistingFinancialRows() throws Exception {
         Context context = ApplicationProvider.getApplicationContext();
         SQLiteOpenHelper legacyHelper = new SQLiteOpenHelper(context, DATABASE_NAME, null, 3) {
@@ -59,7 +77,7 @@ public class FinanceDatabaseMigrationTest {
         legacyHelper.close();
 
         AppDatabase migratedDatabase = Room.databaseBuilder(context, AppDatabase.class, DATABASE_NAME)
-            .addMigrations(AppDatabase.MIGRATION_3_4, AppDatabase.MIGRATION_4_5)
+            .addMigrations(AppDatabase.MIGRATION_3_4, AppDatabase.MIGRATION_4_5, AppDatabase.MIGRATION_5_6)
                 .allowMainThreadQueries()
                 .build();
         try {
@@ -115,7 +133,7 @@ public class FinanceDatabaseMigrationTest {
         legacyHelper.close();
 
         AppDatabase migratedDatabase = Room.databaseBuilder(context, AppDatabase.class, databaseName)
-            .addMigrations(AppDatabase.MIGRATION_3_4, AppDatabase.MIGRATION_4_5)
+            .addMigrations(AppDatabase.MIGRATION_3_4, AppDatabase.MIGRATION_4_5, AppDatabase.MIGRATION_5_6)
                 .allowMainThreadQueries()
                 .build();
         try {
@@ -129,6 +147,45 @@ public class FinanceDatabaseMigrationTest {
                 cursor.moveToFirst();
                 assertEquals("BATCH-6", cursor.getString(0));
             }
+        } finally {
+            migratedDatabase.close();
+            context.deleteDatabase(databaseName);
+        }
+    }
+
+    @Test
+    public void versionFiveMigrationCreatesEmptyOutboxAndPreservesBusinessRows() throws Exception {
+        Context context = ApplicationProvider.getApplicationContext();
+        String databaseName = "finance-migration-v5-test";
+        SQLiteOpenHelper legacyHelper = new SQLiteOpenHelper(context, databaseName, null, 5) {
+            @Override
+            public void onCreate(SQLiteDatabase database) {
+                createSchema(database, 5);
+            }
+
+            @Override
+            public void onUpgrade(SQLiteDatabase database, int oldVersion, int newVersion) {}
+        };
+        SQLiteDatabase oldDatabase = legacyHelper.getWritableDatabase();
+        oldDatabase.execSQL("INSERT INTO inventory (id, name, quantity, unitCost, sellingPrice, "
+                + "minStockLevel, importDuty, shippingCost, clearingCost) "
+                + "VALUES (24, 'Synced stock', 3, 700, 1200, 1, 0, 0, 0)");
+        oldDatabase.execSQL("INSERT INTO shipments (id, batchId, sourceCountry, status, totalValue, "
+                + "shippingCost, insuranceCost, importDuty, vat, clearingCharges, transportToStore, "
+                + "isDelivered, payableId, journalEntryId) "
+                + "VALUES (26, 'SYNC-BATCH', 'China', 'partially_received', 2000, 100, 0, 50, 0, 0, 0, 0, 0, 0)");
+        oldDatabase.close();
+        legacyHelper.close();
+
+        AppDatabase migratedDatabase = Room.databaseBuilder(context, AppDatabase.class, databaseName)
+                .addMigrations(AppDatabase.MIGRATION_3_4, AppDatabase.MIGRATION_4_5,
+                        AppDatabase.MIGRATION_5_6)
+                .allowMainThreadQueries()
+                .build();
+        try {
+            assertEquals("Synced stock", migratedDatabase.financeDao().getInventoryById(24).getName());
+            assertEquals("SYNC-BATCH", migratedDatabase.financeDao().getShipmentById(26).getBatchId());
+            assertEquals(0, migratedDatabase.financeDao().getPendingSyncCount());
         } finally {
             migratedDatabase.close();
             context.deleteDatabase(databaseName);
@@ -154,7 +211,9 @@ public class FinanceDatabaseMigrationTest {
                 database.execSQL(createSql);
                 JSONArray indices = entity.getJSONArray("indices");
                 for (int indexNumber = 0; indexNumber < indices.length(); indexNumber++) {
-                    database.execSQL(indices.getJSONObject(indexNumber).getString("createSql"));
+                    String indexSql = indices.getJSONObject(indexNumber).getString("createSql")
+                            .replace("${TABLE_NAME}", entity.getString("tableName"));
+                    database.execSQL(indexSql);
                 }
             }
             JSONObject databaseSchema = new JSONObject(schemaText.toString()).getJSONObject("database");

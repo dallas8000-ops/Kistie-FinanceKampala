@@ -107,7 +107,7 @@ public class PayablesActivity extends BaseToolbarActivity {
         new AlertDialog.Builder(this).setTitle("Pay Vendor").setView(v)
                 .setPositiveButton("Save", (d, w) -> {
                     try {
-                        new FinanceTransactionService(db).recordPayablePayment(
+                        new FinanceTransactionService(this, db).recordPayablePayment(
                                 ap.getId(), Double.parseDouble(etAmount.getText().toString()),
                             spinner.getSelectedItem().toString(), new Date(),
                             etReference.getText().toString().trim());
@@ -140,7 +140,7 @@ public class PayablesActivity extends BaseToolbarActivity {
                         ap.setBillDate(new Date());
                         ap.setDueDate(new Date());
                         ap.setStatus("OPEN");
-                        new FinanceTransactionService(db).recordManualPayable(ap);
+                        new FinanceTransactionService(this, db).recordManualPayable(ap);
                     } else {
                         AccountPayable replacement = new AccountPayable();
                         replacement.setVendorName(etVendor.getText().toString().trim());
@@ -148,7 +148,7 @@ public class PayablesActivity extends BaseToolbarActivity {
                         replacement.setAmount(amt);
                         replacement.setBillDate(new Date());
                         replacement.setDueDate(existing.getDueDate());
-                        new FinanceTransactionService(db).replaceManualPayable(existing.getId(), replacement);
+                        new FinanceTransactionService(this, db).replaceManualPayable(existing.getId(), replacement);
                     }
                     load();
                 }).setNegativeButton("Cancel", null).show();
@@ -166,9 +166,9 @@ public class PayablesActivity extends BaseToolbarActivity {
                         if (payable.getExpenseId() > 0) {
                             Expense expense = db.financeDao().getExpenseById(payable.getExpenseId());
                             if (expense == null) throw new IllegalStateException("Linked expense was not found.");
-                            new ExpenseAccountingHelper(db).delete(expense);
+                            new ExpenseAccountingHelper(this, db).delete(expense);
                         } else {
-                            new FinanceTransactionService(db).voidPayable(
+                            new FinanceTransactionService(this, db).voidPayable(
                                     payable.getId(), reason.getText().toString(), true);
                         }
                         load();

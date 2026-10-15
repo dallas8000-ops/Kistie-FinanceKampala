@@ -112,7 +112,7 @@ public class ReceivablesActivity extends BaseToolbarActivity {
                 .setPositiveButton("Save", (d, w) -> {
                     double amt = Double.parseDouble(etAmount.getText().toString());
                     try {
-                        new FinanceTransactionService(db).recordReceivablePayment(
+                        new FinanceTransactionService(this, db).recordReceivablePayment(
                             ar.getId(), amt, spinner.getSelectedItem().toString(), new Date(),
                             etReference.getText().toString().trim());
                         load();
@@ -144,7 +144,7 @@ public class ReceivablesActivity extends BaseToolbarActivity {
                         ar.setInvoiceDate(new Date());
                         ar.setDueDate(new Date());
                         ar.setStatus("OPEN");
-                        new FinanceTransactionService(db).recordManualReceivable(ar);
+                        new FinanceTransactionService(this, db).recordManualReceivable(ar);
                     } else {
                         AccountReceivable replacement = new AccountReceivable();
                         replacement.setCustomerName(etCustomer.getText().toString().trim());
@@ -152,7 +152,7 @@ public class ReceivablesActivity extends BaseToolbarActivity {
                         replacement.setAmount(amt);
                         replacement.setInvoiceDate(new Date());
                         replacement.setDueDate(existing.getDueDate());
-                        new FinanceTransactionService(db).replaceManualReceivable(existing.getId(), replacement);
+                        new FinanceTransactionService(this, db).replaceManualReceivable(existing.getId(), replacement);
                     }
                     load();
                 }).setNegativeButton("Cancel", null).show();
@@ -167,7 +167,7 @@ public class ReceivablesActivity extends BaseToolbarActivity {
                 .setView(reason)
                 .setPositiveButton("Confirm and void", (dialog, which) -> {
                     try {
-                        new FinanceTransactionService(db).voidReceivable(
+                        new FinanceTransactionService(this, db).voidReceivable(
                                 receivable.getId(), reason.getText().toString(), true);
                         load();
                     } catch (RuntimeException e) {

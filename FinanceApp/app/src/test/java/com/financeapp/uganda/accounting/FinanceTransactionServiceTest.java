@@ -12,7 +12,6 @@ import androidx.room.Room;
 import androidx.test.core.app.ApplicationProvider;
 import com.financeapp.uganda.AddSaleActivity;
 import com.financeapp.uganda.R;
-import com.financeapp.uganda.SalesActivity;
 import com.financeapp.uganda.database.AppDatabase;
 import com.financeapp.uganda.database.FinanceDao;
 import com.financeapp.uganda.models.Expense;
@@ -45,7 +44,6 @@ public class FinanceTransactionServiceTest {
     private AppDatabase database;
     private Field databaseInstance;
     private ActivityController<AddSaleActivity> saleActivityController;
-    private ActivityController<SalesActivity> salesActivityController;
 
     @Before
     public void setUp() throws Exception {
@@ -63,9 +61,6 @@ public class FinanceTransactionServiceTest {
     public void tearDown() throws Exception {
         if (saleActivityController != null) {
             saleActivityController.pause().stop().destroy();
-        }
-        if (salesActivityController != null) {
-            salesActivityController.pause().stop().destroy();
         }
         if (databaseInstance != null) {
             databaseInstance.set(null, null);
@@ -96,6 +91,12 @@ public class FinanceTransactionServiceTest {
         assertNotNull("sale must post its journal entry", journal);
         assertEquals(1700d, dao.getTotalDebitForEntry(journal.getId()), 0.001d);
         assertEquals(1700d, dao.getTotalCreditForEntry(journal.getId()), 0.001d);
+        assertEquals(1, dao.getPendingSyncCount());
+        com.financeapp.uganda.models.SyncOutboxEntry syncEntry =
+            dao.getPendingSyncEntries(Long.MAX_VALUE, 10).get(0);
+        assertEquals("SALE_POSTED", syncEntry.getOperationType());
+        assertEquals(String.valueOf(sale.getId()), syncEntry.getAggregateId());
+        assertTrue(syncEntry.getPayloadJson().contains("itemName"));
     }
 
     @Test
@@ -166,6 +167,7 @@ public class FinanceTransactionServiceTest {
         assertTrue(dao.getAllSales().isEmpty());
         assertTrue(dao.getAllJournalEntries().isEmpty());
         assertEquals(4, dao.getInventoryById((int) itemId).getQuantity());
+        assertEquals(0, dao.getPendingSyncCount());
     }
 
     @Test
@@ -573,6 +575,9 @@ public class FinanceTransactionServiceTest {
         assertEquals(4, dao.getInventoryById((int) firstItemId).getQuantity());
         assertEquals(1, dao.getInventoryById((int) secondItemId).getQuantity());
         assertEquals(1, dao.getShipmentReceipts((int) shipmentId).size());
+        assertEquals(3, dao.getPendingSyncCount());
+        assertEquals(1, dao.getPendingSyncEntries(Long.MAX_VALUE, 10).stream()
+            .filter(entry -> "SHIPMENT_RECEIVED".equals(entry.getOperationType())).count());
     }
 
     @Test
@@ -693,6 +698,7 @@ public class FinanceTransactionServiceTest {
 
         assertTrue("failed posting must not leave an expense", dao.getAllExpenses().isEmpty());
         assertTrue("failed posting must not leave a journal", dao.getAllJournalEntries().isEmpty());
+        assertEquals(0, dao.getPendingSyncCount());
     }
 
     @Test
@@ -753,7 +759,7 @@ public class FinanceTransactionServiceTest {
     }
 
     @Test
-    public void deletingSaleFromHistoryRestoresStockAndKeepsSaleForAudit() throws Exception {
+    public void deletingSaleFromHistoryRestoresStockAndKeepsSaleForAudit() {
         FinanceDao dao = database.financeDao();
         InventoryItem item = newInventoryItem();
         long itemId = dao.insertInventoryItem(item);
@@ -767,13 +773,7 @@ public class FinanceTransactionServiceTest {
         long saleId = new FinanceTransactionService(database).recordSale(sale);
         assertEquals(3, dao.getInventoryById((int) itemId).getQuantity());
 
-        salesActivityController = Robolectric.buildActivity(SalesActivity.class).setup();
-        SalesActivity activity = salesActivityController.get();
-        java.lang.reflect.Method showSaleDetail = SalesActivity.class
-                .getDeclaredMethod("showSaleDetail", Sale.class);
-        showSaleDetail.setAccessible(true);
-        showSaleDetail.invoke(activity, dao.getSaleById((int) saleId));
-            new FinanceTransactionService(database).voidSale(
+        new FinanceTransactionService(database).voidSale(
                 (int) saleId, "Customer cancellation", true);
 
         assertEquals(4, dao.getInventoryById((int) itemId).getQuantity());

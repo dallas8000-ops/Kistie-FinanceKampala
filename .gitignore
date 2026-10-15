@@ -43,7 +43,8 @@ Thumbs.db
 *.orig
 
 # Gradle Wrapper
-gradle/wrapper/gradle-wrapper.jar
+!**/gradle/wrapper/gradle-wrapper.jar
+!**/gradlew
 
 # Kotlin
 *.kotlin_module

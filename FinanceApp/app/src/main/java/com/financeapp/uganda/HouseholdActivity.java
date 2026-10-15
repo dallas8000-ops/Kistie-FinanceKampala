@@ -128,7 +128,7 @@ public class HouseholdActivity extends BaseToolbarActivity {
                     expense.setPaymentMethod(spinnerPayment.getSelectedItem().toString());
                     expense.setReceiptNumber(etReference.getText().toString().trim());
                     try {
-                        ExpenseAccountingHelper helper = new ExpenseAccountingHelper(db);
+                        ExpenseAccountingHelper helper = new ExpenseAccountingHelper(this, db);
                         if (existing == null) helper.saveNew(expense);
                         else helper.update(expense);
                         loadHouseholdExpenses();
@@ -167,7 +167,7 @@ public class HouseholdActivity extends BaseToolbarActivity {
             .setMessage("This keeps the expense for audit and reverses its accounting entry. Continue?")
             .setPositiveButton("Void", (dialog, which) -> {
                     try {
-                        new ExpenseAccountingHelper(db).delete(expense);
+                        new ExpenseAccountingHelper(this, db).delete(expense);
                         loadHouseholdExpenses();
                         Toast.makeText(this, "Expense voided", Toast.LENGTH_SHORT).show();
                     } catch (RuntimeException e) {

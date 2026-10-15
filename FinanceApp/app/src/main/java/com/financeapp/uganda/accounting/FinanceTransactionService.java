@@ -1,5 +1,6 @@
 package com.financeapp.uganda.accounting;
 
+import android.content.Context;
 import com.financeapp.uganda.database.AppDatabase;
 import com.financeapp.uganda.database.FinanceDao;
 import com.financeapp.uganda.models.Expense;
@@ -15,18 +16,29 @@ import com.financeapp.uganda.models.Shipment;
 import com.financeapp.uganda.models.ShipmentLine;
 import com.financeapp.uganda.models.ShipmentReceipt;
 import com.financeapp.uganda.models.ShipmentReceiptLine;
+import com.financeapp.uganda.models.SyncOutboxEntry;
+import com.financeapp.uganda.sync.FinanceSyncScheduler;
 import com.financeapp.uganda.utils.PaymentMethods;
+import com.google.gson.Gson;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 public class FinanceTransactionService {
 
     private final AppDatabase database;
     private final FinanceDao dao;
     private final AccountingService accounting;
+    private final Context appContext;
 
     public FinanceTransactionService(AppDatabase database) {
+        this(null, database);
+    }
+
+    public FinanceTransactionService(Context context, AppDatabase database) {
+        this.appContext = context == null ? null : context.getApplicationContext();
         this.database = database;
         this.dao = database.financeDao();
         this.accounting = new AccountingService(dao);
@@ -77,6 +89,17 @@ public class FinanceTransactionService {
 
         item.setQuantity(item.getQuantity() - sale.getQuantitySold());
         dao.updateInventoryItem(item);
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("sale", sale);
+        payload.put("inventoryItem", item);
+        payload.put("journalEntry", dao.getJournalEntryById(sale.getJournalEntryId()));
+        payload.put("journalLines", dao.getLinesForEntry(sale.getJournalEntryId()));
+        if (sale.getReceivableId() > 0) {
+            AccountReceivable receivable = dao.getReceivableById(sale.getReceivableId());
+            payload.put("receivable", receivable);
+            payload.put("receivablePayments", dao.getReceivablePayments(sale.getReceivableId()));
+        }
+        enqueueSyncOperation("SALE_POSTED", String.valueOf(saleId), payload);
         return saleId;
     }
 
@@ -112,6 +135,12 @@ public class FinanceTransactionService {
             validateProviderReference(paymentMethod, reference);
             journalId[0] = accounting.recordReceivablePayment(
                     receivable, amount, paymentMethod, paidAt, reference);
+                Map<String, Object> payload = new LinkedHashMap<>();
+                payload.put("receivable", dao.getReceivableById(receivableId));
+                payload.put("payments", dao.getReceivablePayments(receivableId));
+                payload.put("journalEntry", dao.getJournalEntryById((int) journalId[0]));
+                payload.put("journalLines", dao.getLinesForEntry((int) journalId[0]));
+                enqueueSyncOperation("RECEIVABLE_PAYMENT", receivableId + ":" + journalId[0], payload);
         });
         return journalId[0];
     }
@@ -128,6 +157,12 @@ public class FinanceTransactionService {
             validatePaymentMethod(paymentMethod);
             validateProviderReference(paymentMethod, reference);
             journalId[0] = accounting.recordPayablePayment(payable, amount, paymentMethod, paidAt, reference);
+            Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("payable", dao.getPayableById(payableId));
+            payload.put("payments", dao.getPayablePayments(payableId));
+            payload.put("journalEntry", dao.getJournalEntryById((int) journalId[0]));
+            payload.put("journalLines", dao.getLinesForEntry((int) journalId[0]));
+            enqueueSyncOperation("PAYABLE_PAYMENT", payableId + ":" + journalId[0], payload);
         });
         return journalId[0];
     }
@@ -177,6 +212,11 @@ public class FinanceTransactionService {
             }
             shipment.setTotalValue(goodsValueUgx);
             dao.updateShipment(shipment);
+            Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("shipment", shipment);
+            payload.put("line", line);
+            payload.put("inventoryItem", dao.getInventoryById(line.getInventoryItemId()));
+            enqueueSyncOperation("SHIPMENT_LINE_ADDED", String.valueOf(lineId[0]), payload);
         });
         return lineId[0];
     }
@@ -333,6 +373,15 @@ public class FinanceTransactionService {
                 shipment.setStatus("partially_received");
             }
             dao.updateShipment(shipment);
+            Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("shipment", shipment);
+            payload.put("shipmentLines", dao.getShipmentLines(shipmentId));
+            payload.put("receipt", dao.getShipmentReceiptById((int) receiptId[0]));
+            payload.put("receiptLines", dao.getShipmentReceiptLines((int) receiptId[0]));
+            payload.put("payable", dao.getPayableById(payableId));
+            payload.put("journalEntry", dao.getJournalEntryById(journalId));
+            payload.put("journalLines", dao.getLinesForEntry(journalId));
+            enqueueSyncOperation("SHIPMENT_RECEIVED", receiptReference, payload);
         });
         return receiptId[0];
     }
@@ -354,6 +403,7 @@ public class FinanceTransactionService {
             existing.setVoidReason("Receivable edited");
             existing.setVoidedAt(new Date());
             dao.updateReceivable(existing);
+            enqueueSyncOperation("RECEIVABLE_VOIDED", String.valueOf(existing.getId()), existing);
 
             replacement.setId(0);
             replacement.setAmountPaid(0);
@@ -406,6 +456,7 @@ public class FinanceTransactionService {
             receivable.setVoidReason(reason.trim());
             receivable.setVoidedAt(new Date());
             dao.updateReceivable(receivable);
+            enqueueSyncOperation("RECEIVABLE_VOIDED", String.valueOf(receivableId), receivable);
         });
     }
 
@@ -424,6 +475,11 @@ public class FinanceTransactionService {
                     AccountCodes.OPERATING_EXPENSE, AccountCodes.ACCOUNTS_PAYABLE, payable.getAmount());
             payable.setJournalEntryId(entry.getId());
             dao.updatePayable(payable);
+            Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("payable", payable);
+            payload.put("journalEntry", entry);
+            payload.put("journalLines", dao.getLinesForEntry(entry.getId()));
+            enqueueSyncOperation("PAYABLE_POSTED", String.valueOf(payableId[0]), payload);
         });
         return payableId[0];
     }
@@ -447,6 +503,7 @@ public class FinanceTransactionService {
             existing.setVoidReason("Payable edited");
             existing.setVoidedAt(new Date());
             dao.updatePayable(existing);
+            enqueueSyncOperation("PAYABLE_VOIDED", String.valueOf(existing.getId()), existing);
 
             replacement.setId(0);
             replacement.setAmountPaid(0);
@@ -462,6 +519,11 @@ public class FinanceTransactionService {
                     AccountCodes.ACCOUNTS_PAYABLE, replacement.getAmount());
             replacement.setJournalEntryId(entry.getId());
             dao.updatePayable(replacement);
+            Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("payable", replacement);
+            payload.put("journalEntry", entry);
+            payload.put("journalLines", dao.getLinesForEntry(entry.getId()));
+            enqueueSyncOperation("PAYABLE_POSTED", String.valueOf(replacementId[0]), payload);
         });
         return replacementId[0];
     }
@@ -503,6 +565,7 @@ public class FinanceTransactionService {
             payable.setVoidReason(reason.trim());
             payable.setVoidedAt(new Date());
             dao.updatePayable(payable);
+            enqueueSyncOperation("PAYABLE_VOIDED", String.valueOf(payableId), payable);
         });
     }
 
@@ -566,6 +629,14 @@ public class FinanceTransactionService {
             sale.setVoidReason(reason.trim());
             sale.setVoidedAt(new Date());
             dao.updateSale(sale);
+            Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("sale", sale);
+            payload.put("inventoryItem", item);
+            if (receivable != null) {
+                payload.put("receivable", receivable);
+                payload.put("payments", dao.getReceivablePayments(receivable.getId()));
+            }
+            enqueueSyncOperation("SALE_VOIDED", String.valueOf(saleId), payload);
     }
 
     private void validateSale(Sale sale, InventoryItem item) {
@@ -648,7 +719,27 @@ public class FinanceTransactionService {
         long expenseId = dao.insertExpense(expense);
         expense.setId((int) expenseId);
         accounting.postExpense(expense);
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("expense", expense);
+        payload.put("journalEntry", dao.getJournalEntryById(expense.getJournalEntryId()));
+        payload.put("journalLines", dao.getLinesForEntry(expense.getJournalEntryId()));
+        if (expense.getPayableId() > 0) payload.put("payable", dao.getPayableById(expense.getPayableId()));
+        enqueueSyncOperation("EXPENSE_POSTED", String.valueOf(expenseId), payload);
         return expenseId;
+    }
+
+    private void enqueueSyncOperation(String operationType, String aggregateId, Object payload) {
+        SyncOutboxEntry entry = new SyncOutboxEntry();
+        entry.setOperationId(UUID.randomUUID().toString());
+        entry.setOperationType(operationType);
+        entry.setAggregateId(aggregateId);
+        entry.setPayloadJson(new Gson().toJson(payload));
+        entry.setPayloadVersion(1);
+        entry.setCreatedAt(System.currentTimeMillis());
+        entry.setNextAttemptAt(0);
+        entry.setStatus("PENDING");
+        dao.insertSyncOutboxEntry(entry);
+        if (appContext != null) FinanceSyncScheduler.schedule(appContext);
     }
 
     private long recordManualReceivableWithinTransaction(AccountReceivable receivable) {
@@ -661,6 +752,11 @@ public class FinanceTransactionService {
                 AccountCodes.ACCOUNTS_RECEIVABLE, AccountCodes.SALES_REVENUE, receivable.getAmount());
         receivable.setJournalEntryId(entry.getId());
         dao.updateReceivable(receivable);
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("receivable", receivable);
+        payload.put("journalEntry", entry);
+        payload.put("journalLines", dao.getLinesForEntry(entry.getId()));
+        enqueueSyncOperation("RECEIVABLE_POSTED", String.valueOf(id), payload);
         return id;
     }
 
@@ -777,5 +873,13 @@ public class FinanceTransactionService {
         expense.setVoidReason(reason.trim());
         expense.setVoidedAt(new Date());
         dao.updateExpense(expense);
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("expense", expense);
+        payload.put("payable", payable);
+        if (expense.getJournalEntryId() > 0) {
+            payload.put("journalEntry", dao.getJournalEntryById(expense.getJournalEntryId()));
+            payload.put("journalLines", dao.getLinesForEntry(expense.getJournalEntryId()));
+        }
+        enqueueSyncOperation("EXPENSE_VOIDED", String.valueOf(expenseId), payload);
     }
 }

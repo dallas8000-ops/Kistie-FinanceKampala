@@ -191,7 +191,7 @@ public class ShipmentsActivity extends BaseToolbarActivity {
                         line.setUnitCost(Double.parseDouble(etUnitCost.getText().toString().trim()));
                         line.setCurrencyCode(spinnerCurrency.getSelectedItem().toString());
                         line.setExchangeRate(Double.parseDouble(etExchangeRate.getText().toString().trim()));
-                        new FinanceTransactionService(db).addShipmentLine(line);
+                        new FinanceTransactionService(this, db).addShipmentLine(line);
                         loadShipments();
                     } catch (RuntimeException e) {
                         Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
@@ -246,7 +246,7 @@ public class ShipmentsActivity extends BaseToolbarActivity {
                                 quantities.put(entry.getKey(), Integer.parseInt(text));
                             }
                         }
-                        new FinanceTransactionService(db).receiveShipment(
+                        new FinanceTransactionService(this, db).receiveShipment(
                                 shipment.getId(), quantities, new Date(), receiptReference);
                         loadShipments();
                         Toast.makeText(this, "Stock received and landed costs posted.", Toast.LENGTH_LONG).show();
@@ -265,7 +265,7 @@ public class ShipmentsActivity extends BaseToolbarActivity {
             orderValue += line.getOrderedQuantity() * unitValue;
             EditText field = fields.get(line.getId());
             if (field != null) {
-                int quantity = (int) parseDouble(field.getText().toString());
+                int quantity = (int) parsePreviewDouble(field.getText().toString());
                 receivedValue += quantity * unitValue;
             }
         }
@@ -322,9 +322,18 @@ public class ShipmentsActivity extends BaseToolbarActivity {
 
     private void updateLinePreview(EditText quantity, EditText unitCost, EditText rate, TextView preview) {
         preview.setText("Line value: " + CurrencyFormatter.formatUGX(
-                parseDouble(quantity.getText().toString())
-                        * parseDouble(unitCost.getText().toString())
-                        * parseDouble(rate.getText().toString())));
+                parsePreviewDouble(quantity.getText().toString())
+                        * parsePreviewDouble(unitCost.getText().toString())
+                        * parsePreviewDouble(rate.getText().toString())));
+    }
+
+    static double parsePreviewDouble(String value) {
+        if (value == null || value.trim().isEmpty()) return 0;
+        try {
+            return Double.parseDouble(value.trim());
+        } catch (NumberFormatException ignored) {
+            return 0;
+        }
     }
 
     private double parseDouble(String value) {
