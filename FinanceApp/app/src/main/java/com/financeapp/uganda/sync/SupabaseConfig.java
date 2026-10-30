@@ -5,19 +5,19 @@ import java.net.URI;
 
 public final class SupabaseConfig {
     private final String projectUrl;
-    private final String anonKey;
+    private final String publishableKey;
 
-    public SupabaseConfig(String projectUrl, String anonKey) {
+    public SupabaseConfig(String projectUrl, String publishableKey) {
         this.projectUrl = projectUrl == null ? "" : projectUrl.trim();
-        this.anonKey = anonKey == null ? "" : anonKey.trim();
+        this.publishableKey = publishableKey == null ? "" : publishableKey.trim();
     }
 
     public static SupabaseConfig fromBuildConfig() {
-        return new SupabaseConfig(BuildConfig.SUPABASE_URL, BuildConfig.SUPABASE_ANON_KEY);
+        return new SupabaseConfig(BuildConfig.SUPABASE_URL, BuildConfig.SUPABASE_PUBLISHABLE_KEY);
     }
 
     public boolean isConfigured() {
-        if (projectUrl.isEmpty() || anonKey.isEmpty()) return false;
+        if (projectUrl.isEmpty() || publishableKey.isEmpty()) return false;
         try {
             URI uri = URI.create(projectUrl);
             if (!"https".equalsIgnoreCase(uri.getScheme()) || uri.getHost() == null
@@ -25,10 +25,10 @@ public final class SupabaseConfig {
         } catch (IllegalArgumentException e) {
             return false;
         }
-        String normalizedKey = anonKey.toLowerCase(java.util.Locale.ROOT);
+        String normalizedKey = publishableKey.toLowerCase(java.util.Locale.ROOT);
         return !normalizedKey.contains("service_role") && !normalizedKey.startsWith("sb_secret_");
     }
 
     public String getProjectUrl() { return projectUrl; }
-    public String getAnonKey() { return anonKey; }
+    public String getPublishableKey() { return publishableKey; }
 }

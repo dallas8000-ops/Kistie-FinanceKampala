@@ -1,5 +1,6 @@
 package com.financeapp.uganda.sync;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.security.keystore.KeyGenParameterSpec;
@@ -77,6 +78,7 @@ public final class SupabaseSessionStore {
         }
     }
 
+    @SuppressLint("ApplySharedPref") // session removal must hit disk before logout completes
     public void clear() {
         preferences.edit().remove(CIPHERTEXT).commit();
     }

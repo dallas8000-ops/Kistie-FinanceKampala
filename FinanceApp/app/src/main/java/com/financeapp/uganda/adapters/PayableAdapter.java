@@ -53,7 +53,12 @@ public class PayableAdapter extends RecyclerView.Adapter<PayableAdapter.Holder> 
     public int getItemCount() { return items.size(); }
 
     class Holder extends RecyclerView.ViewHolder {
-        TextView tvName, tvDescription, tvPaidInfo, tvAmount, tvStatus, tvDue;
+        TextView tvName;
+        TextView tvDescription;
+        TextView tvPaidInfo;
+        TextView tvAmount;
+        TextView tvStatus;
+        TextView tvDue;
         Holder(View v) {
             super(v);
             tvName = v.findViewById(R.id.tvName);

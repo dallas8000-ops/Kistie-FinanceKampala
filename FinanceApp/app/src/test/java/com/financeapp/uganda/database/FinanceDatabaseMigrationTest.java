@@ -1,6 +1,7 @@
 package com.financeapp.uganda.database;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
 import android.content.Context;
@@ -34,7 +35,7 @@ public class FinanceDatabaseMigrationTest {
         Context context = ApplicationProvider.getApplicationContext();
         AppDatabase database = Room.inMemoryDatabaseBuilder(context, AppDatabase.class)
                 .addMigrations(AppDatabase.MIGRATION_3_4, AppDatabase.MIGRATION_4_5,
-                        AppDatabase.MIGRATION_5_6)
+                    AppDatabase.MIGRATION_5_6, AppDatabase.MIGRATION_6_7)
                 .allowMainThreadQueries()
                 .build();
         try {
@@ -77,7 +78,8 @@ public class FinanceDatabaseMigrationTest {
         legacyHelper.close();
 
         AppDatabase migratedDatabase = Room.databaseBuilder(context, AppDatabase.class, DATABASE_NAME)
-            .addMigrations(AppDatabase.MIGRATION_3_4, AppDatabase.MIGRATION_4_5, AppDatabase.MIGRATION_5_6)
+                .addMigrations(AppDatabase.MIGRATION_3_4, AppDatabase.MIGRATION_4_5,
+                    AppDatabase.MIGRATION_5_6, AppDatabase.MIGRATION_6_7)
                 .allowMainThreadQueries()
                 .build();
         try {
@@ -133,7 +135,8 @@ public class FinanceDatabaseMigrationTest {
         legacyHelper.close();
 
         AppDatabase migratedDatabase = Room.databaseBuilder(context, AppDatabase.class, databaseName)
-            .addMigrations(AppDatabase.MIGRATION_3_4, AppDatabase.MIGRATION_4_5, AppDatabase.MIGRATION_5_6)
+                .addMigrations(AppDatabase.MIGRATION_3_4, AppDatabase.MIGRATION_4_5,
+                    AppDatabase.MIGRATION_5_6, AppDatabase.MIGRATION_6_7)
                 .allowMainThreadQueries()
                 .build();
         try {
@@ -179,13 +182,61 @@ public class FinanceDatabaseMigrationTest {
 
         AppDatabase migratedDatabase = Room.databaseBuilder(context, AppDatabase.class, databaseName)
                 .addMigrations(AppDatabase.MIGRATION_3_4, AppDatabase.MIGRATION_4_5,
-                        AppDatabase.MIGRATION_5_6)
+                    AppDatabase.MIGRATION_5_6, AppDatabase.MIGRATION_6_7)
                 .allowMainThreadQueries()
                 .build();
         try {
             assertEquals("Synced stock", migratedDatabase.financeDao().getInventoryById(24).getName());
             assertEquals("SYNC-BATCH", migratedDatabase.financeDao().getShipmentById(26).getBatchId());
             assertEquals(0, migratedDatabase.financeDao().getPendingSyncCount());
+        } finally {
+            migratedDatabase.close();
+            context.deleteDatabase(databaseName);
+        }
+    }
+
+    @Test
+    public void versionSixMigrationAddsStableSyncIdsToExistingRows() throws Exception {
+        Context context = ApplicationProvider.getApplicationContext();
+        String databaseName = "finance-migration-v6-test";
+        SQLiteOpenHelper legacyHelper = new SQLiteOpenHelper(context, databaseName, null, 6) {
+            @Override
+            public void onCreate(SQLiteDatabase database) {
+                createSchema(database, 6);
+            }
+
+            @Override
+            public void onUpgrade(SQLiteDatabase database, int oldVersion, int newVersion) {}
+        };
+        SQLiteDatabase oldDatabase = legacyHelper.getWritableDatabase();
+        oldDatabase.execSQL("INSERT INTO inventory (id, name, quantity, unitCost, sellingPrice, "
+                + "minStockLevel, importDuty, shippingCost, clearingCost) "
+                + "VALUES (44, 'Existing sync item', 5, 600, 1000, 1, 0, 0, 0)");
+        oldDatabase.execSQL("INSERT INTO shipments (id, batchId, sourceCountry, status, totalValue, "
+                + "shippingCost, insuranceCost, importDuty, vat, clearingCharges, transportToStore, "
+                + "isDelivered, payableId, journalEntryId) "
+                + "VALUES (46, 'SYNC-ID-BATCH', 'China', 'in_transit', 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0)");
+        oldDatabase.close();
+        legacyHelper.close();
+
+        AppDatabase migratedDatabase = Room.databaseBuilder(context, AppDatabase.class, databaseName)
+                .addMigrations(AppDatabase.MIGRATION_3_4, AppDatabase.MIGRATION_4_5,
+                        AppDatabase.MIGRATION_5_6, AppDatabase.MIGRATION_6_7)
+                .allowMainThreadQueries()
+                .build();
+        try {
+            assertEquals("Existing sync item", migratedDatabase.financeDao().getInventoryById(44).getName());
+            assertEquals("SYNC-ID-BATCH", migratedDatabase.financeDao().getShipmentById(46).getBatchId());
+            try (Cursor cursor = migratedDatabase.getOpenHelper().getReadableDatabase()
+                    .query("SELECT syncId FROM inventory WHERE id = 44")) {
+                cursor.moveToFirst();
+                assertFalse(cursor.getString(0).isEmpty());
+            }
+            try (Cursor cursor = migratedDatabase.getOpenHelper().getReadableDatabase()
+                    .query("SELECT syncId FROM shipments WHERE id = 46")) {
+                cursor.moveToFirst();
+                assertFalse(cursor.getString(0).isEmpty());
+            }
         } finally {
             migratedDatabase.close();
             context.deleteDatabase(databaseName);

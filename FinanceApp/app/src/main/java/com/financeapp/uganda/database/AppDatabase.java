@@ -17,10 +17,10 @@ import com.financeapp.uganda.utils.DateConverter;
         AccountReceivable.class, AccountPayable.class,
         ReceivablePayment.class, PayablePayment.class, SyncOutboxEntry.class,
         ShipmentLine.class, ShipmentReceipt.class, ShipmentReceiptLine.class
-    }, version = 6, exportSchema = true)
+    }, version = 7, exportSchema = true)
 @TypeConverters(DateConverter.class)
 public abstract class AppDatabase extends RoomDatabase {
-    public static final int CURRENT_SCHEMA_VERSION = 6;
+    public static final int CURRENT_SCHEMA_VERSION = 7;
         public static final Migration MIGRATION_3_4 = new Migration(3, 4) {
         @Override
         public void migrate(SupportSQLiteDatabase database) {
@@ -69,6 +69,25 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
+    public static final Migration MIGRATION_6_7 = new Migration(6, 7) {
+        @Override
+        public void migrate(SupportSQLiteDatabase database) {
+            String[] tables = {
+                    "inventory", "sales", "expenses", "accounts_receivable", "accounts_payable",
+                    "receivable_payments", "payable_payments", "shipments", "shipment_lines",
+                    "shipment_receipts", "shipment_receipt_lines", "journal_entries", "journal_lines"
+            };
+            for (String table : tables) {
+                database.execSQL("ALTER TABLE " + table
+                        + " ADD COLUMN syncId TEXT NOT NULL DEFAULT ''");
+                database.execSQL("UPDATE " + table
+                        + " SET syncId = lower(hex(randomblob(16))) WHERE syncId = ''");
+                database.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_" + table
+                        + "_syncId ON " + table + " (syncId)");
+            }
+        }
+    };
+
         public static final Migration MIGRATION_4_5 = new Migration(4, 5) {
         @Override
         public void migrate(SupportSQLiteDatabase database) {
@@ -113,7 +132,7 @@ public abstract class AppDatabase extends RoomDatabase {
                     AppDatabase.class,
                     "finance_database"
                 )
-                .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                 .allowMainThreadQueries()
                 .build();
             AccountSeeder.seedIfNeeded(instance.financeDao());

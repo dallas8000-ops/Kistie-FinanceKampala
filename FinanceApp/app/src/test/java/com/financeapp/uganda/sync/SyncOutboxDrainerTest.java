@@ -101,6 +101,22 @@ public class SyncOutboxDrainerTest {
         assertEquals(1, dao.getPendingSyncCount());
     }
 
+    @Test
+    public void transientRefreshFailureAfterUnauthorizedUploadRemainsRetryable() {
+        long operationId = dao.insertSyncOutboxEntry(entry("refresh-outage"));
+        sessions.saveSession("access", "refresh", System.currentTimeMillis() + 3600000L);
+        java.util.concurrent.atomic.AtomicInteger requests =
+                new java.util.concurrent.atomic.AtomicInteger();
+
+        SyncOutboxDrainer.Outcome outcome = drainer(
+                () -> requests.getAndIncrement() == 0 ? 401 : 503).drain();
+
+        assertEquals(SyncOutboxDrainer.Outcome.RETRY, outcome);
+        assertEquals("PENDING", dao.getSyncOutboxEntryById((int) operationId).getStatus());
+        assertEquals(1, dao.getPendingSyncCount());
+        assertEquals(2, requests.get());
+    }
+
     private SyncOutboxDrainer drainer(int statusCode) {
         return drainer(() -> statusCode);
     }

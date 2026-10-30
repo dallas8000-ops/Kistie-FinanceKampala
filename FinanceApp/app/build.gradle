@@ -9,10 +9,26 @@ if (localPropertiesFile.exists()) {
 }
 def localOpenAiKey = localProperties.getProperty('openai.apiKey', '')
 def escapedLocalOpenAiKey = localOpenAiKey.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '')
-def localSupabaseUrl = localProperties.getProperty('supabase.url', '')
-def localSupabaseAnonKey = localProperties.getProperty('supabase.anonKey', '')
+def supabaseConfigValue = { String environmentName, List propertyNames ->
+    String value = System.getenv(environmentName)
+    if (value == null || value.trim().isEmpty()) {
+        for (String propertyName : propertyNames) {
+            value = localProperties.getProperty(propertyName)
+            if (value != null && !value.trim().isEmpty()) break
+        }
+    }
+    value == null ? '' : value.trim()
+}
+def localSupabaseUrl = supabaseConfigValue('SUPABASE_URL',
+        ['SUPABASE_URL', 'SUPABASE.URL', 'supabase.url'])
+def localSupabasePublishableKey = supabaseConfigValue('SUPABASE_PUBLISHABLE_KEY',
+        ['SUPABASE_PUBLISHABLE_KEY', 'supabase.publishableKey', 'supabase.anonKey'])
+def normalizedSupabaseKey = localSupabasePublishableKey.toLowerCase(Locale.ROOT)
+if (normalizedSupabaseKey.startsWith('sb_secret_') || normalizedSupabaseKey.contains('service_role')) {
+    throw new GradleException('Only a Supabase publishable key can be included in the Android app.')
+}
 def escapedSupabaseUrl = localSupabaseUrl.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '')
-def escapedSupabaseAnonKey = localSupabaseAnonKey.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '')
+def escapedSupabasePublishableKey = localSupabasePublishableKey.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '')
 
 android {
     namespace 'com.financeapp.uganda'
@@ -30,7 +46,7 @@ android {
         versionName "1.0"
         buildConfigField "String", "OPENAI_API_KEY", "\"${escapedLocalOpenAiKey}\""
         buildConfigField "String", "SUPABASE_URL", "\"${escapedSupabaseUrl}\""
-        buildConfigField "String", "SUPABASE_ANON_KEY", "\"${escapedSupabaseAnonKey}\""
+        buildConfigField "String", "SUPABASE_PUBLISHABLE_KEY", "\"${escapedSupabasePublishableKey}\""
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         javaCompileOptions {
             annotationProcessorOptions {

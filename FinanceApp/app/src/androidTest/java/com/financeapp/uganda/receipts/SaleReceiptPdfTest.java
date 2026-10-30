@@ -48,7 +48,7 @@ public class SaleReceiptPdfTest {
             assertEquals("content", uri.getScheme());
             assertEquals(context.getPackageName() + ".fileprovider", uri.getAuthority());
         } finally {
-            receipt.delete();
+            receipt.delete(); // NOSONAR java.nio.file.Files needs API 26; minSdk is 24
         }
     }
 }

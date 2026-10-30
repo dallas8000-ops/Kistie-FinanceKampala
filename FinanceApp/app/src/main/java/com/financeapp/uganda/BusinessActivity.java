@@ -28,7 +28,6 @@ import java.util.List;
 
 public class BusinessActivity extends BaseToolbarActivity {
 
-    private RecyclerView recyclerView;
     private ExpenseAdapter adapter;
     private AppDatabase db;
     private Date selectedDate;
@@ -44,7 +43,7 @@ public class BusinessActivity extends BaseToolbarActivity {
         selectedDate = new Date();
 
         TabLayout tabLayout = findViewById(R.id.tabLayout);
-        recyclerView = findViewById(R.id.recyclerView);
+        RecyclerView recyclerView = findViewById(R.id.recyclerView);
         FloatingActionButton fabAdd = findViewById(R.id.fabAdd);
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));

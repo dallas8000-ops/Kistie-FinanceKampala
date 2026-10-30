@@ -26,6 +26,7 @@ local.properties
 # Generated files
 **/gen/
 **/out/
+**/bin/
 
 # Logs
 *.log

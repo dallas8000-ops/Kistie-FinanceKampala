@@ -68,7 +68,7 @@ public final class SupabaseAuthClient {
         }
         Request request = new Request.Builder()
                 .url(baseUrl() + "/auth/v1/logout")
-                .addHeader("apikey", config.getAnonKey())
+                .addHeader("apikey", config.getPublishableKey())
                 .addHeader("Authorization", "Bearer " + accessToken.trim())
                 .post(RequestBody.create("", JSON))
                 .build();
@@ -85,7 +85,7 @@ public final class SupabaseAuthClient {
         if (!isConfigured()) return notConfigured();
         Request request = new Request.Builder()
                 .url(baseUrl() + "/auth/v1/token?grant_type=" + grantType)
-                .addHeader("apikey", config.getAnonKey())
+                .addHeader("apikey", config.getPublishableKey())
                 .post(RequestBody.create(body.toString(), JSON))
                 .build();
         try (Response response = client.newCall(request).execute()) {

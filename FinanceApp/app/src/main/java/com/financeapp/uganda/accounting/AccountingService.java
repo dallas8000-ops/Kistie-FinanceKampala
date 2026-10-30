@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class AccountingService {
 
@@ -417,15 +418,15 @@ public class AccountingService {
         sb.append("Trial Balance Summary (UGX):\n");
         for (TrialBalanceLine line : getTrialBalance()) {
             if (line.accountId == -1) {
-                sb.append(String.format("TOTALS: Debit %,.0f | Credit %,.0f | Balanced: %s\n",
+                sb.append(String.format(Locale.US, "TOTALS: Debit %,.0f | Credit %,.0f | Balanced: %s\n",
                         line.debit, line.credit, Math.abs(line.debit - line.credit) < 0.01 ? "Yes" : "No"));
             } else if (line.debit > 0 || line.credit > 0) {
-                sb.append(String.format("%s %s: Dr %,.0f Cr %,.0f\n", line.code, line.name, line.debit, line.credit));
+                sb.append(String.format(Locale.US, "%s %s: Dr %,.0f Cr %,.0f\n", line.code, line.name, line.debit, line.credit));
             }
         }
-        sb.append(String.format("Open Receivables: %,.0f UGX\n", dao.getTotalReceivableBalance()));
-        sb.append(String.format("Open Payables: %,.0f UGX\n", dao.getTotalPayableBalance()));
-        sb.append(String.format("Total Sales: %,.0f UGX\n", dao.getTotalSales()));
+        sb.append(String.format(Locale.US, "Open Receivables: %,.0f UGX\n", dao.getTotalReceivableBalance()));
+        sb.append(String.format(Locale.US, "Open Payables: %,.0f UGX\n", dao.getTotalPayableBalance()));
+        sb.append(String.format(Locale.US, "Total Sales: %,.0f UGX\n", dao.getTotalSales()));
         return sb.toString();
     }
 

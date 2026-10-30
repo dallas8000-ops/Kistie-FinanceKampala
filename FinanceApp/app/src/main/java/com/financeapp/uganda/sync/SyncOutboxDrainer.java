@@ -27,57 +27,82 @@ public final class SyncOutboxDrainer {
     public Outcome drain() {
         if (config == null || !config.isConfigured()) return Outcome.NOT_CONFIGURED;
         SupabaseSessionStore.Session session = sessions.getSession();
-        if (session == null) return dao.getPendingSyncCount() > 0
-                ? Outcome.NEEDS_SIGN_IN : Outcome.COMPLETE;
-
-        if (session.getExpiresAtMillis() <= System.currentTimeMillis() + REFRESH_BEFORE_EXPIRY_MILLIS) {
-            SupabaseAuthClient.Result refresh = authClient.refresh(session.getRefreshToken());
-            if (!refresh.isSuccess()) {
-                if (isAuthFailure(refresh.getHttpCode())) return Outcome.NEEDS_SIGN_IN;
-                return Outcome.RETRY;
-            }
-            session = refresh.getSession();
-            sessions.saveSession(session.getAccessToken(), session.getRefreshToken(),
-                    session.getExpiresAtMillis());
+        if (session == null) {
+            return dao.getPendingSyncCount() > 0 ? Outcome.NEEDS_SIGN_IN : Outcome.COMPLETE;
         }
 
+        if (session.getExpiresAtMillis() <= System.currentTimeMillis() + REFRESH_BEFORE_EXPIRY_MILLIS) {
+            SupabaseAuthClient.Result refresh = refreshSession(session);
+            if (!refresh.isSuccess()) return refreshFailureOutcome(refresh);
+            session = refresh.getSession();
+        }
+        return drainPending(session);
+    }
+
+    private Outcome drainPending(SupabaseSessionStore.Session session) {
         List<SyncOutboxEntry> pending = dao.getPendingSyncEntries(System.currentTimeMillis(), BATCH_SIZE);
         for (SyncOutboxEntry entry : pending) {
             FinanceSyncClient.Result result = syncClient.push(entry, session.getAccessToken());
             if (result.getStatus() == FinanceSyncClient.Status.AUTH_REQUIRED) {
-                SupabaseAuthClient.Result refresh = authClient.refresh(session.getRefreshToken());
+                SupabaseAuthClient.Result refresh = refreshSession(session);
                 if (!refresh.isSuccess()) {
-                    dao.markSyncOperationAuthRequired(entry.getId(), safeHttpError(result.getHttpCode()));
-                    return Outcome.NEEDS_SIGN_IN;
+                    return handleRefreshFailure(entry, refresh);
                 }
                 session = refresh.getSession();
-                sessions.saveSession(session.getAccessToken(), session.getRefreshToken(),
-                        session.getExpiresAtMillis());
                 result = syncClient.push(entry, session.getAccessToken());
             }
-            switch (result.getStatus()) {
-                case ACKNOWLEDGED:
-                    dao.markSyncOperationAcknowledged(entry.getId());
-                    break;
-                case CONFLICT:
-                    dao.markSyncOperationConflict(entry.getId(), safeHttpError(result.getHttpCode()));
-                    return Outcome.CONFLICT;
-                case RETRY:
-                    long nextAttemptAt = System.currentTimeMillis() + retryDelay(entry.getAttempts() + 1);
-                    dao.scheduleSyncOperationRetry(entry.getId(), nextAttemptAt,
-                            safeHttpError(result.getHttpCode()));
-                    return Outcome.RETRY;
-                case AUTH_REQUIRED:
-                    dao.markSyncOperationAuthRequired(entry.getId(), safeHttpError(result.getHttpCode()));
-                    return Outcome.NEEDS_SIGN_IN;
-                case REJECTED:
-                    dao.markSyncOperationRejected(entry.getId(), safeHttpError(result.getHttpCode()));
-                    return Outcome.REJECTED;
-                case NOT_CONFIGURED:
-                    return Outcome.NOT_CONFIGURED;
-            }
+            Outcome outcome = persistPushResult(entry, result);
+            if (outcome != Outcome.COMPLETE) return outcome;
         }
         return Outcome.COMPLETE;
+    }
+
+    private SupabaseAuthClient.Result refreshSession(SupabaseSessionStore.Session session) {
+        SupabaseAuthClient.Result result = authClient.refresh(session.getRefreshToken());
+        if (result.isSuccess()) {
+            SupabaseSessionStore.Session refreshed = result.getSession();
+            sessions.saveSession(refreshed.getAccessToken(), refreshed.getRefreshToken(),
+                    refreshed.getExpiresAtMillis());
+        }
+        return result;
+    }
+
+    private Outcome refreshFailureOutcome(SupabaseAuthClient.Result result) {
+        return isAuthFailure(result.getHttpCode()) ? Outcome.NEEDS_SIGN_IN : Outcome.RETRY;
+    }
+
+    private Outcome handleRefreshFailure(SyncOutboxEntry entry, SupabaseAuthClient.Result result) {
+        Outcome outcome = refreshFailureOutcome(result);
+        if (outcome == Outcome.NEEDS_SIGN_IN) {
+            dao.markSyncOperationAuthRequired(entry.getId(), safeHttpError(result.getHttpCode()));
+        }
+        return outcome;
+    }
+
+    private Outcome persistPushResult(SyncOutboxEntry entry, FinanceSyncClient.Result result) {
+        String error = safeHttpError(result.getHttpCode());
+        switch (result.getStatus()) {
+            case ACKNOWLEDGED:
+                dao.markSyncOperationAcknowledged(entry.getId());
+                return Outcome.COMPLETE;
+            case CONFLICT:
+                dao.markSyncOperationConflict(entry.getId(), error);
+                return Outcome.CONFLICT;
+            case RETRY:
+                long nextAttemptAt = System.currentTimeMillis() + retryDelay(entry.getAttempts() + 1);
+                dao.scheduleSyncOperationRetry(entry.getId(), nextAttemptAt, error);
+                return Outcome.RETRY;
+            case AUTH_REQUIRED:
+                dao.markSyncOperationAuthRequired(entry.getId(), error);
+                return Outcome.NEEDS_SIGN_IN;
+            case REJECTED:
+                dao.markSyncOperationRejected(entry.getId(), error);
+                return Outcome.REJECTED;
+            case NOT_CONFIGURED:
+                return Outcome.NOT_CONFIGURED;
+            default:
+                return Outcome.RETRY;
+        }
     }
 
     private long retryDelay(int attempt) {

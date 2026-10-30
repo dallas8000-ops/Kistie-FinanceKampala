@@ -23,6 +23,7 @@ import com.google.gson.Gson;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -44,6 +45,26 @@ public class FinanceTransactionService {
         this.accounting = new AccountingService(dao);
     }
 
+    public long recordInventoryItem(InventoryItem item) {
+        if (item == null) throw new IllegalArgumentException("Inventory item is required.");
+        long[] itemId = new long[1];
+        database.runInTransaction(() -> {
+            itemId[0] = dao.insertInventoryItem(item);
+            item.setId((int) itemId[0]);
+            enqueueSyncOperation("INVENTORY_ITEM_POSTED", item.getSyncId(), item);
+        });
+        return itemId[0];
+    }
+
+    public void deleteInventoryItem(int inventoryItemId) {
+        database.runInTransaction(() -> {
+            InventoryItem item = dao.getInventoryById(inventoryItemId);
+            if (item == null) throw new IllegalArgumentException("Inventory item does not exist.");
+            dao.deleteInventoryItem(item);
+            enqueueSyncOperation("INVENTORY_ITEM_DELETED", item.getSyncId(), item);
+        });
+    }
+
     public long recordSale(Sale sale) {
         long[] saleId = new long[1];
         database.runInTransaction(() -> saleId[0] = recordSaleWithinTransaction(sale));
@@ -55,6 +76,7 @@ public class FinanceTransactionService {
         database.runInTransaction(() -> {
             voidSaleWithinTransaction(saleId, "Sale edited", refundConfirmed);
             replacement.setId(0);
+            replacement.setSyncId(UUID.randomUUID().toString());
             replacement.setJournalEntryId(0);
             replacement.setReceivableId(0);
             replacement.setCostOfGoodsSold(0);
@@ -112,6 +134,7 @@ public class FinanceTransactionService {
         database.runInTransaction(() -> {
             voidExpenseWithinTransaction(expenseId, reason, refundConfirmed);
             replacement.setId(0);
+            replacement.setSyncId(UUID.randomUUID().toString());
             replacement.setJournalEntryId(0);
             replacement.setPayableId(0);
             replacement.setStatus("POSTED");
@@ -193,7 +216,7 @@ public class FinanceTransactionService {
             if (!Double.isFinite(line.getUnitCost()) || line.getUnitCost() < 0) {
                 throw new IllegalArgumentException("Unit cost must be a valid non-negative amount.");
             }
-            String currency = line.getCurrencyCode() == null ? "" : line.getCurrencyCode().trim().toUpperCase();
+            String currency = line.getCurrencyCode() == null ? "" : line.getCurrencyCode().trim().toUpperCase(Locale.ROOT);
             if (!("UGX".equals(currency) || "USD".equals(currency)
                     || "TRY".equals(currency) || "CNY".equals(currency))) {
                 throw new IllegalArgumentException("Currency must be UGX, USD, TRY, or CNY.");
@@ -406,6 +429,7 @@ public class FinanceTransactionService {
             enqueueSyncOperation("RECEIVABLE_VOIDED", String.valueOf(existing.getId()), existing);
 
             replacement.setId(0);
+            replacement.setSyncId(UUID.randomUUID().toString());
             replacement.setAmountPaid(0);
             replacement.setStatus("OPEN");
             replacement.setJournalEntryId(0);
@@ -506,6 +530,7 @@ public class FinanceTransactionService {
             enqueueSyncOperation("PAYABLE_VOIDED", String.valueOf(existing.getId()), existing);
 
             replacement.setId(0);
+            replacement.setSyncId(UUID.randomUUID().toString());
             replacement.setAmountPaid(0);
             replacement.setStatus("OPEN");
             replacement.setJournalEntryId(0);

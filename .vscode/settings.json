@@ -1,5 +1,16 @@
 {
-  "java.import.gradle.enabled": true,
+  "java.import.gradle.enabled": false,
+  "java.import.exclusions": [
+    "**/node_modules/**",
+    "**/.metadata/**",
+    "**/archetype-resources/**",
+    "**/META-INF/maven/**",
+    "**/FinanceApp/**"
+  ],
   "java.import.maven.enabled": false,
-  "java.errors.incompleteClasspath.severity": "warning"
+  "java.errors.incompleteClasspath.severity": "ignore",
+  "sonarlint.analyzerProperties": {
+    "sonar.java.source": "8"
+  },
+  "java.compile.nullAnalysis.mode": "automatic"
 }

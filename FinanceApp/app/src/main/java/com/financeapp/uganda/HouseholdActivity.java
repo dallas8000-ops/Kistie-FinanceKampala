@@ -28,7 +28,6 @@ import java.util.List;
 
 public class HouseholdActivity extends BaseToolbarActivity {
 
-    private RecyclerView recyclerView;
     private ExpenseAdapter adapter;
     private AppDatabase db;
     private TextView tvTotal;
@@ -43,7 +42,7 @@ public class HouseholdActivity extends BaseToolbarActivity {
         db = AppDatabase.getInstance(this);
         selectedDate = new Date();
 
-        recyclerView = findViewById(R.id.recyclerView);
+        RecyclerView recyclerView = findViewById(R.id.recyclerView);
         tvTotal = findViewById(R.id.tvTotal);
         FloatingActionButton fabAdd = findViewById(R.id.fabAdd);
 

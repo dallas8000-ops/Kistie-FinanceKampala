@@ -46,14 +46,14 @@ public class ExpenseAdapter extends RecyclerView.Adapter<ExpenseAdapter.ExpenseV
         holder.tvDescription.setText(expense.getDescription());
         holder.tvAmount.setText(CurrencyFormatter.formatUGX(expense.getAmount()));
         holder.tvDate.setText(expense.getDate() != null ? dateFormat.format(expense.getDate()) : "");
-        holder.tvCategory.setText(expense.getCategory() != null ? expense.getCategory().replace("_", " ").toUpperCase() : "");
+        holder.tvCategory.setText(expense.getCategory() != null ? expense.getCategory().replace("_", " ").toUpperCase(Locale.ROOT) : "");
 
         if ("VOID".equals(expense.getStatus())) {
             holder.tvStatus.setVisibility(View.VISIBLE);
             holder.tvStatus.setText("VOID");
         } else if (expense.getShipmentStatus() != null && !expense.getShipmentStatus().isEmpty()) {
             holder.tvStatus.setVisibility(View.VISIBLE);
-            holder.tvStatus.setText("Status: " + expense.getShipmentStatus().toUpperCase());
+            holder.tvStatus.setText("Status: " + expense.getShipmentStatus().toUpperCase(Locale.ROOT));
         } else {
             holder.tvStatus.setVisibility(View.GONE);
         }
@@ -80,7 +80,12 @@ public class ExpenseAdapter extends RecyclerView.Adapter<ExpenseAdapter.ExpenseV
     }
 
     class ExpenseViewHolder extends RecyclerView.ViewHolder {
-        TextView tvDescription, tvAmount, tvDate, tvCategory, tvStatus, tvSource;
+        TextView tvDescription;
+        TextView tvAmount;
+        TextView tvDate;
+        TextView tvCategory;
+        TextView tvStatus;
+        TextView tvSource;
 
         ExpenseViewHolder(View itemView) {
             super(itemView);

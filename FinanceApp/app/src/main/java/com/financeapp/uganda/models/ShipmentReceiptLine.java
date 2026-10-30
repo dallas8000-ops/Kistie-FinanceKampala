@@ -1,12 +1,19 @@
 package com.financeapp.uganda.models;
 
+import androidx.annotation.NonNull;
+import androidx.room.ColumnInfo;
 import androidx.room.Entity;
+import androidx.room.Index;
 import androidx.room.PrimaryKey;
+import java.util.UUID;
 
-@Entity(tableName = "shipment_receipt_lines")
+@Entity(tableName = "shipment_receipt_lines", indices = {@Index(value = {"syncId"}, unique = true)})
 public class ShipmentReceiptLine {
     @PrimaryKey(autoGenerate = true)
     private int id;
+    @NonNull
+    @ColumnInfo(defaultValue = "''")
+    private String syncId = UUID.randomUUID().toString();
     private int receiptId;
     private int shipmentLineId;
     private int quantity;
@@ -18,6 +25,8 @@ public class ShipmentReceiptLine {
 
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
+    @NonNull public String getSyncId() { return syncId; }
+    public void setSyncId(@NonNull String syncId) { this.syncId = syncId; }
     public int getReceiptId() { return receiptId; }
     public void setReceiptId(int receiptId) { this.receiptId = receiptId; }
     public int getShipmentLineId() { return shipmentLineId; }

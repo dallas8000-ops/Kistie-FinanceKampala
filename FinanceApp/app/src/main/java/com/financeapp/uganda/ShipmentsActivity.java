@@ -25,12 +25,12 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
 public class ShipmentsActivity extends BaseToolbarActivity {
 
-    private RecyclerView recyclerView;
     private ShipmentAdapter adapter;
     private AppDatabase db;
     private TextView tvTotal;
@@ -42,7 +42,7 @@ public class ShipmentsActivity extends BaseToolbarActivity {
         setupToolbar("Import Shipments");
 
         db = AppDatabase.getInstance(this);
-        recyclerView = findViewById(R.id.recyclerView);
+        RecyclerView recyclerView = findViewById(R.id.recyclerView);
         tvTotal = findViewById(R.id.tvTotal);
         FloatingActionButton fabAdd = findViewById(R.id.fabAdd);
 
@@ -81,7 +81,7 @@ public class ShipmentsActivity extends BaseToolbarActivity {
         EditText etTrackingNumber = view.findViewById(R.id.etTrackingNumber);
         EditText etNotes = view.findViewById(R.id.etNotes);
 
-        etBatchId.setText("BATCH-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+        etBatchId.setText("BATCH-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(Locale.ROOT));
         spinnerCountry.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_item,
                 new String[]{"Turkey", "China"}));
         spinnerStatus.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_item,
@@ -234,7 +234,7 @@ public class ShipmentsActivity extends BaseToolbarActivity {
             return;
         }
         updateReceivePreview(shipment, receivedFields, preview);
-        String receiptReference = "RCV-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        String receiptReference = "RCV-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(Locale.ROOT);
         new AlertDialog.Builder(this).setTitle("Receive " + shipment.getBatchId())
                 .setView(content)
                 .setPositiveButton("Receive stock", (dialog, which) -> {

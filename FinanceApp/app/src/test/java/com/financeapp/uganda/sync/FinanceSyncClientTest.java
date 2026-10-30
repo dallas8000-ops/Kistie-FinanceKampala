@@ -1,6 +1,7 @@
 package com.financeapp.uganda.sync;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import com.financeapp.uganda.models.SyncOutboxEntry;
@@ -20,6 +21,32 @@ import org.robolectric.RobolectricTestRunner;
 
 @RunWith(RobolectricTestRunner.class)
 public class FinanceSyncClientTest {
+    @Test
+    public void pullsOwnerOperationsAfterCursorInServerSequenceOrder() throws Exception {
+        AtomicReference<Request> captured = new AtomicReference<>();
+        OkHttpClient fakeClient = fakeClient(200, captured,
+                "[{\"server_sequence\":42,\"operation_id\":\"550e8400-e29b-41d4-a716-446655440042\","
+                        + "\"operation_type\":\"SALE_POSTED\",\"aggregate_id\":\"sale-42\","
+                        + "\"payload_version\":1,\"payload\":{\"sale\":{\"syncId\":\"sale-sync-id\"}}}]");
+        FinanceSyncClient client = new FinanceSyncClient(
+                new SupabaseConfig("https://owner-project.supabase.co", "public-anon-key"), fakeClient);
+
+        FinanceSyncClient.PullResult result = client.pull(41L, 25, "user-access-token");
+
+        assertEquals(FinanceSyncClient.Status.PULL_COMPLETE, result.getStatus());
+        assertEquals(1, result.getOperations().size());
+        assertEquals(42L, result.getLastSequence());
+        assertEquals("SALE_POSTED", result.getOperations().get(0).getOperationType());
+        assertNotNull(result.getOperations().get(0).getPayload().optJSONObject("sale"));
+        Request request = captured.get();
+        assertEquals("/rest/v1/finance_operations", request.url().encodedPath());
+        assertEquals("gt.41", request.url().queryParameter("server_sequence"));
+        assertEquals("server_sequence.asc", request.url().queryParameter("order"));
+        assertEquals("25", request.url().queryParameter("limit"));
+        assertEquals("public-anon-key", request.header("apikey"));
+        assertEquals("Bearer user-access-token", request.header("Authorization"));
+    }
+
     @Test
     public void postsOwnerAuthenticatedIdempotentOperationToRpc() throws Exception {
         AtomicReference<Request> captured = new AtomicReference<>();

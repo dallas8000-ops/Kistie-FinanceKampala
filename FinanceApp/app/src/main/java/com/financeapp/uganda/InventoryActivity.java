@@ -12,6 +12,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import com.financeapp.uganda.accounting.FinanceTransactionService;
 import com.financeapp.uganda.adapters.InventoryAdapter;
 import com.financeapp.uganda.database.AppDatabase;
 import com.financeapp.uganda.models.InventoryItem;
@@ -107,7 +108,7 @@ public class InventoryActivity extends BaseToolbarActivity {
                     item.setImportSource(spinnerSource.getSelectedItem().toString());
                     item.setSupplier(etSupplier.getText().toString().trim());
                     item.setDateAdded(new Date());
-                    db.financeDao().insertInventoryItem(item);
+                    new FinanceTransactionService(this, db).recordInventoryItem(item);
                     loadInventory();
                     Toast.makeText(this, "Item added!", Toast.LENGTH_SHORT).show();
                 })
@@ -120,7 +121,7 @@ public class InventoryActivity extends BaseToolbarActivity {
                 .setTitle("Delete Item")
                 .setMessage("Delete " + item.getName() + "?")
                 .setPositiveButton("Delete", (dialog, which) -> {
-                    db.financeDao().deleteInventoryItem(item);
+                    new FinanceTransactionService(this, db).deleteInventoryItem(item.getId());
                     loadInventory();
                     Toast.makeText(this, "Deleted", Toast.LENGTH_SHORT).show();
                 })

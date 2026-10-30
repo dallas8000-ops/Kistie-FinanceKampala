@@ -25,6 +25,7 @@ import com.financeapp.uganda.models.Shipment;
 import com.financeapp.uganda.models.ShipmentLine;
 import com.financeapp.uganda.models.ShipmentReceipt;
 import com.financeapp.uganda.models.ShipmentReceiptLine;
+import com.financeapp.uganda.models.SyncOutboxEntry;
 import java.lang.reflect.Field;
 import java.util.Date;
 import java.util.HashMap;
@@ -97,6 +98,30 @@ public class FinanceTransactionServiceTest {
         assertEquals("SALE_POSTED", syncEntry.getOperationType());
         assertEquals(String.valueOf(sale.getId()), syncEntry.getAggregateId());
         assertTrue(syncEntry.getPayloadJson().contains("itemName"));
+    }
+
+    @Test
+    public void inventoryCreateAndDeleteEnqueueStableSyncOperations() {
+        FinanceDao dao = database.financeDao();
+        FinanceTransactionService transactions = new FinanceTransactionService(database);
+        InventoryItem item = newInventoryItem();
+        String syncId = item.getSyncId();
+
+        long itemId = transactions.recordInventoryItem(item);
+        SyncOutboxEntry created = dao.getPendingSyncEntries(Long.MAX_VALUE, 10).get(0);
+
+        assertEquals("INVENTORY_ITEM_POSTED", created.getOperationType());
+        assertEquals(syncId, created.getAggregateId());
+        assertTrue(created.getPayloadJson().contains(syncId));
+
+        transactions.deleteInventoryItem((int) itemId);
+        java.util.List<SyncOutboxEntry> entries = dao.getPendingSyncEntries(Long.MAX_VALUE, 10);
+
+        assertEquals(2, entries.size());
+        assertEquals("INVENTORY_ITEM_DELETED", entries.get(1).getOperationType());
+        assertEquals(syncId, entries.get(1).getAggregateId());
+        assertTrue(entries.get(1).getPayloadJson().contains(syncId));
+        assertEquals(null, dao.getInventoryById((int) itemId));
     }
 
     @Test

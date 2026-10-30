@@ -3,16 +3,21 @@ package com.financeapp.uganda.models;
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
 import androidx.room.ColumnInfo;
+import androidx.room.Index;
 import androidx.room.PrimaryKey;
 import androidx.room.TypeConverters;
 import com.financeapp.uganda.utils.DateConverter;
 import java.util.Date;
+import java.util.UUID;
 
-@Entity(tableName = "expenses")
+@Entity(tableName = "expenses", indices = {@Index(value = {"syncId"}, unique = true)})
 @TypeConverters(DateConverter.class)
 public class Expense {
     @PrimaryKey(autoGenerate = true)
     private int id;
+    @NonNull
+    @ColumnInfo(defaultValue = "''")
+    private String syncId = UUID.randomUUID().toString();
     private String category;
     private String subCategory;
     private double amount;
@@ -40,6 +45,8 @@ public class Expense {
 
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
+    @NonNull public String getSyncId() { return syncId; }
+    public void setSyncId(@NonNull String syncId) { this.syncId = syncId; }
     public String getCategory() { return category; }
     public void setCategory(String category) { this.category = category; }
     public String getSubCategory() { return subCategory; }

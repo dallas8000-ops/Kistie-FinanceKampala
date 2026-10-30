@@ -66,7 +66,13 @@ public class InventoryAdapter extends RecyclerView.Adapter<InventoryAdapter.Inve
     }
 
     class InventoryViewHolder extends RecyclerView.ViewHolder {
-        TextView tvName, tvCategory, tvQuantity, tvPrice, tvSellingPrice, tvSource, tvProfit;
+        TextView tvName;
+        TextView tvCategory;
+        TextView tvQuantity;
+        TextView tvPrice;
+        TextView tvSellingPrice;
+        TextView tvSource;
+        TextView tvProfit;
 
         InventoryViewHolder(View itemView) {
             super(itemView);
