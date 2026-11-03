@@ -59,7 +59,12 @@ public class SaleAdapter extends RecyclerView.Adapter<SaleAdapter.Holder> {
     public int getItemCount() { return sales.size(); }
 
     class Holder extends RecyclerView.ViewHolder {
-        TextView tvDescription, tvCategory, tvAmount, tvDate, tvStatus, tvSource;
+        TextView tvDescription;
+        TextView tvCategory;
+        TextView tvAmount;
+        TextView tvDate;
+        TextView tvStatus;
+        TextView tvSource;
         Holder(View v) {
             super(v);
             tvDescription = v.findViewById(R.id.tvDescription);

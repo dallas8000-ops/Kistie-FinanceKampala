@@ -2,16 +2,21 @@ package com.financeapp.uganda.models;
 
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
+import androidx.room.Index;
 import androidx.room.PrimaryKey;
 import androidx.room.TypeConverters;
 import com.financeapp.uganda.utils.DateConverter;
 import java.util.Date;
+import java.util.UUID;
 
-@Entity(tableName = "shipments")
+@Entity(tableName = "shipments", indices = {@Index(value = {"syncId"}, unique = true)})
 @TypeConverters(DateConverter.class)
 public class Shipment {
     @PrimaryKey(autoGenerate = true)
     private int id;
+    @androidx.annotation.NonNull
+    @ColumnInfo(defaultValue = "''")
+    private String syncId = UUID.randomUUID().toString();
     private String batchId;
     private String sourceCountry;
     private String supplierName;
@@ -43,6 +48,8 @@ public class Shipment {
 
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
+    @androidx.annotation.NonNull public String getSyncId() { return syncId; }
+    public void setSyncId(@androidx.annotation.NonNull String syncId) { this.syncId = syncId; }
     public String getBatchId() { return batchId; }
     public void setBatchId(String batchId) { this.batchId = batchId; }
     public String getSourceCountry() { return sourceCountry; }

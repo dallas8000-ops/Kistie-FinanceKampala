@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content">
 
@@ -27,14 +28,17 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Size (S, M, L, XL)"
-            android:layout_marginTop="8dp" />
+            android:layout_marginTop="8dp"
+            android:inputType="textCapCharacters|textNoSuggestions"
+            tools:ignore="TextFields" />
 
         <EditText
             android:id="@+id/etColor"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Color"
-            android:layout_marginTop="8dp" />
+            android:layout_marginTop="8dp"
+            android:inputType="textCapWords" />
 
         <EditText
             android:id="@+id/etQuantity"
@@ -79,7 +83,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Supplier Name"
-            android:layout_marginTop="8dp" />
+            android:layout_marginTop="8dp"
+            android:inputType="textPersonName|textCapWords" />
 
     </LinearLayout>
 </ScrollView>

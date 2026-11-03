@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content">
 
@@ -27,7 +28,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Supplier Name"
-            android:layout_marginTop="8dp" />
+            android:layout_marginTop="8dp"
+            android:inputType="textPersonName|textCapWords" />
 
         <Spinner
             android:id="@+id/spinnerStatus"
@@ -88,14 +90,17 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Tracking Number"
-            android:layout_marginTop="8dp" />
+            android:layout_marginTop="8dp"
+            android:inputType="textCapCharacters|textNoSuggestions"
+            tools:ignore="TextFields" />
 
         <EditText
             android:id="@+id/etNotes"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Notes"
-            android:layout_marginTop="8dp" />
+            android:layout_marginTop="8dp"
+            android:inputType="textMultiLine|textCapSentences" />
 
     </LinearLayout>
 </ScrollView>

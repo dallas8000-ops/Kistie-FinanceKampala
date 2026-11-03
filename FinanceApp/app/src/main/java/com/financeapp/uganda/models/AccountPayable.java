@@ -1,16 +1,23 @@
 package com.financeapp.uganda.models;
 
+import androidx.annotation.NonNull;
+import androidx.room.ColumnInfo;
 import androidx.room.Entity;
+import androidx.room.Index;
 import androidx.room.PrimaryKey;
 import androidx.room.TypeConverters;
 import com.financeapp.uganda.utils.DateConverter;
 import java.util.Date;
+import java.util.UUID;
 
-@Entity(tableName = "accounts_payable")
+@Entity(tableName = "accounts_payable", indices = {@Index(value = {"syncId"}, unique = true)})
 @TypeConverters(DateConverter.class)
 public class AccountPayable {
     @PrimaryKey(autoGenerate = true)
     private int id;
+    @NonNull
+    @ColumnInfo(defaultValue = "''")
+    private String syncId = UUID.randomUUID().toString();
     private String vendorName;
     private String description;
     private double amount;
@@ -29,6 +36,8 @@ public class AccountPayable {
 
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
+    @NonNull public String getSyncId() { return syncId; }
+    public void setSyncId(@NonNull String syncId) { this.syncId = syncId; }
     public String getVendorName() { return vendorName; }
     public void setVendorName(String vendorName) { this.vendorName = vendorName; }
     public String getDescription() { return description; }

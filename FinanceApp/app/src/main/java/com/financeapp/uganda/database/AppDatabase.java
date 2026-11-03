@@ -15,12 +15,12 @@ import com.financeapp.uganda.utils.DateConverter;
         Expense.class, InventoryItem.class, Sale.class, Shipment.class,
         Account.class, JournalEntry.class, JournalLine.class,
         AccountReceivable.class, AccountPayable.class,
-        ReceivablePayment.class, PayablePayment.class,
+        ReceivablePayment.class, PayablePayment.class, SyncOutboxEntry.class,
         ShipmentLine.class, ShipmentReceipt.class, ShipmentReceiptLine.class
-    }, version = 5, exportSchema = true)
+    }, version = 7, exportSchema = true)
 @TypeConverters(DateConverter.class)
 public abstract class AppDatabase extends RoomDatabase {
-    public static final int CURRENT_SCHEMA_VERSION = 5;
+    public static final int CURRENT_SCHEMA_VERSION = 7;
         public static final Migration MIGRATION_3_4 = new Migration(3, 4) {
         @Override
         public void migrate(SupportSQLiteDatabase database) {
@@ -51,6 +51,42 @@ public abstract class AppDatabase extends RoomDatabase {
                 + "VALUES (12, '3020', 'Owner Drawings', 'EQUITY', 1)");
         }
         };
+
+    public static final Migration MIGRATION_5_6 = new Migration(5, 6) {
+        @Override
+        public void migrate(SupportSQLiteDatabase database) {
+            database.execSQL("CREATE TABLE IF NOT EXISTS sync_outbox ("
+                    + "id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, "
+                    + "operationId TEXT NOT NULL, operationType TEXT NOT NULL, aggregateId TEXT NOT NULL, "
+                    + "payloadJson TEXT NOT NULL, payloadVersion INTEGER NOT NULL DEFAULT 1, "
+                    + "createdAt INTEGER NOT NULL, attempts INTEGER NOT NULL DEFAULT 0, "
+                    + "nextAttemptAt INTEGER NOT NULL DEFAULT 0, status TEXT NOT NULL DEFAULT 'PENDING', "
+                    + "lastError TEXT)");
+            database.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_sync_outbox_operationId "
+                    + "ON sync_outbox (operationId)");
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_sync_outbox_status_nextAttemptAt "
+                    + "ON sync_outbox (status, nextAttemptAt)");
+        }
+    };
+
+    public static final Migration MIGRATION_6_7 = new Migration(6, 7) {
+        @Override
+        public void migrate(SupportSQLiteDatabase database) {
+            String[] tables = {
+                    "inventory", "sales", "expenses", "accounts_receivable", "accounts_payable",
+                    "receivable_payments", "payable_payments", "shipments", "shipment_lines",
+                    "shipment_receipts", "shipment_receipt_lines", "journal_entries", "journal_lines"
+            };
+            for (String table : tables) {
+                database.execSQL("ALTER TABLE " + table
+                        + " ADD COLUMN syncId TEXT NOT NULL DEFAULT ''");
+                database.execSQL("UPDATE " + table
+                        + " SET syncId = lower(hex(randomblob(16))) WHERE syncId = ''");
+                database.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_" + table
+                        + "_syncId ON " + table + " (syncId)");
+            }
+        }
+    };
 
         public static final Migration MIGRATION_4_5 = new Migration(4, 5) {
         @Override
@@ -96,7 +132,7 @@ public abstract class AppDatabase extends RoomDatabase {
                     AppDatabase.class,
                     "finance_database"
                 )
-                .addMigrations(MIGRATION_3_4, MIGRATION_4_5)
+                .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                 .allowMainThreadQueries()
                 .build();
             AccountSeeder.seedIfNeeded(instance.financeDao());

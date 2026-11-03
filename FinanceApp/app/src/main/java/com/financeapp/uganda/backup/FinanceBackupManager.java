@@ -34,7 +34,6 @@ public final class FinanceBackupManager {
     private static final int PAYLOAD_VERSION = 1;
     private static final String DATABASE_NAME = "finance_database";
     private static final String CANDIDATE_DATABASE_NAME = "finance_restore_candidate";
-    private static final int KEY_BYTES = 32;
     private static final int SALT_BYTES = 16;
     private static final int NONCE_BYTES = 12;
     private static final int TAG_BITS = 128;

@@ -2,16 +2,24 @@ package com.financeapp.uganda.models;
 
 import androidx.room.Entity;
 import androidx.room.Index;
+import androidx.room.ColumnInfo;
 import androidx.room.PrimaryKey;
 import androidx.room.TypeConverters;
 import com.financeapp.uganda.utils.DateConverter;
 import java.util.Date;
+import java.util.UUID;
 
-@Entity(tableName = "shipment_receipts", indices = {@Index(value = {"reference"}, unique = true)})
+@Entity(tableName = "shipment_receipts", indices = {
+        @Index(value = {"reference"}, unique = true),
+        @Index(value = {"syncId"}, unique = true)
+})
 @TypeConverters(DateConverter.class)
 public class ShipmentReceipt {
     @PrimaryKey(autoGenerate = true)
     private int id;
+    @androidx.annotation.NonNull
+    @ColumnInfo(defaultValue = "''")
+    private String syncId = UUID.randomUUID().toString();
     private int shipmentId;
     private Date receivedAt;
     private double goodsValueUgx;
@@ -24,6 +32,8 @@ public class ShipmentReceipt {
 
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
+    @androidx.annotation.NonNull public String getSyncId() { return syncId; }
+    public void setSyncId(@androidx.annotation.NonNull String syncId) { this.syncId = syncId; }
     public int getShipmentId() { return shipmentId; }
     public void setShipmentId(int shipmentId) { this.shipmentId = shipmentId; }
     public Date getReceivedAt() { return receivedAt; }

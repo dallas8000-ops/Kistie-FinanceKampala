@@ -28,7 +28,6 @@ import java.util.List;
 
 public class HouseholdActivity extends BaseToolbarActivity {
 
-    private RecyclerView recyclerView;
     private ExpenseAdapter adapter;
     private AppDatabase db;
     private TextView tvTotal;
@@ -43,7 +42,7 @@ public class HouseholdActivity extends BaseToolbarActivity {
         db = AppDatabase.getInstance(this);
         selectedDate = new Date();
 
-        recyclerView = findViewById(R.id.recyclerView);
+        RecyclerView recyclerView = findViewById(R.id.recyclerView);
         tvTotal = findViewById(R.id.tvTotal);
         FloatingActionButton fabAdd = findViewById(R.id.fabAdd);
 
@@ -128,7 +127,7 @@ public class HouseholdActivity extends BaseToolbarActivity {
                     expense.setPaymentMethod(spinnerPayment.getSelectedItem().toString());
                     expense.setReceiptNumber(etReference.getText().toString().trim());
                     try {
-                        ExpenseAccountingHelper helper = new ExpenseAccountingHelper(db);
+                        ExpenseAccountingHelper helper = new ExpenseAccountingHelper(this, db);
                         if (existing == null) helper.saveNew(expense);
                         else helper.update(expense);
                         loadHouseholdExpenses();
@@ -167,7 +166,7 @@ public class HouseholdActivity extends BaseToolbarActivity {
             .setMessage("This keeps the expense for audit and reverses its accounting entry. Continue?")
             .setPositiveButton("Void", (dialog, which) -> {
                     try {
-                        new ExpenseAccountingHelper(db).delete(expense);
+                        new ExpenseAccountingHelper(this, db).delete(expense);
                         loadHouseholdExpenses();
                         Toast.makeText(this, "Expense voided", Toast.LENGTH_SHORT).show();
                     } catch (RuntimeException e) {

@@ -47,7 +47,7 @@ public class ShipmentAdapter extends RecyclerView.Adapter<ShipmentAdapter.Shipme
         holder.tvSupplier.setText(shipment.getSupplierName());
         holder.tvSource.setText("From: " + shipment.getSourceCountry());
         String status = shipment.getStatus() != null ? shipment.getStatus() : "";
-        holder.tvStatus.setText(status.isEmpty() ? "—" : status.toUpperCase());
+        holder.tvStatus.setText(status.isEmpty() ? "—" : status.toUpperCase(Locale.ROOT));
         holder.tvTotalCost.setText("Total: " + CurrencyFormatter.formatUGX(shipment.getTotalImportCost()));
 
         if (shipment.getOrderDate() != null) {
@@ -87,7 +87,12 @@ public class ShipmentAdapter extends RecyclerView.Adapter<ShipmentAdapter.Shipme
     }
 
     class ShipmentViewHolder extends RecyclerView.ViewHolder {
-        TextView tvBatchId, tvSupplier, tvSource, tvStatus, tvTotalCost, tvOrderDate;
+        TextView tvBatchId;
+        TextView tvSupplier;
+        TextView tvSource;
+        TextView tvStatus;
+        TextView tvTotalCost;
+        TextView tvOrderDate;
 
         ShipmentViewHolder(View itemView) {
             super(itemView);

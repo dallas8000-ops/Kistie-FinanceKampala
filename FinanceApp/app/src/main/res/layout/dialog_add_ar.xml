@@ -9,14 +9,16 @@
         android:id="@+id/etCustomer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Customer Name" />
+        android:hint="Customer Name"
+        android:inputType="textPersonName|textCapWords" />
 
     <EditText
         android:id="@+id/etDescription"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:hint="Description / Invoice" />
+        android:hint="Description / Invoice"
+        android:inputType="textMultiLine|textCapSentences" />
 
     <EditText
         android:id="@+id/etAmount"

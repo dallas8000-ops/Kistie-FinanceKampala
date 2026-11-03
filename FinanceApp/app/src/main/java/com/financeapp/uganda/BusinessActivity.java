@@ -28,7 +28,6 @@ import java.util.List;
 
 public class BusinessActivity extends BaseToolbarActivity {
 
-    private RecyclerView recyclerView;
     private ExpenseAdapter adapter;
     private AppDatabase db;
     private Date selectedDate;
@@ -44,7 +43,7 @@ public class BusinessActivity extends BaseToolbarActivity {
         selectedDate = new Date();
 
         TabLayout tabLayout = findViewById(R.id.tabLayout);
-        recyclerView = findViewById(R.id.recyclerView);
+        RecyclerView recyclerView = findViewById(R.id.recyclerView);
         FloatingActionButton fabAdd = findViewById(R.id.fabAdd);
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -160,7 +159,7 @@ public class BusinessActivity extends BaseToolbarActivity {
                     expense.setPaymentMethod(spinnerPayment.getSelectedItem().toString());
                     expense.setReceiptNumber(etReference.getText().toString().trim());
                     try {
-                        ExpenseAccountingHelper helper = new ExpenseAccountingHelper(db);
+                        ExpenseAccountingHelper helper = new ExpenseAccountingHelper(this, db);
                         if (existing == null) helper.saveNew(expense);
                         else helper.update(expense);
                         loadExpenses();
@@ -199,7 +198,7 @@ public class BusinessActivity extends BaseToolbarActivity {
                 .setMessage("This keeps the expense for audit and reverses its accounting entry. Continue?")
                 .setPositiveButton("Void", (dialog, which) -> {
                     try {
-                        new ExpenseAccountingHelper(db).delete(expense);
+                        new ExpenseAccountingHelper(this, db).delete(expense);
                         loadExpenses();
                         Toast.makeText(this, "Expense voided", Toast.LENGTH_SHORT).show();
                     } catch (RuntimeException e) {

@@ -3,16 +3,21 @@ package com.financeapp.uganda.models;
 import androidx.annotation.NonNull;
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
+import androidx.room.Index;
 import androidx.room.PrimaryKey;
 import androidx.room.TypeConverters;
 import com.financeapp.uganda.utils.DateConverter;
 import java.util.Date;
+import java.util.UUID;
 
-@Entity(tableName = "payable_payments")
+@Entity(tableName = "payable_payments", indices = {@Index(value = {"syncId"}, unique = true)})
 @TypeConverters(DateConverter.class)
 public class PayablePayment {
     @PrimaryKey(autoGenerate = true)
     private int id;
+    @NonNull
+    @ColumnInfo(defaultValue = "''")
+    private String syncId = UUID.randomUUID().toString();
     private int payableId;
     private double amount;
     private String paymentMethod;
@@ -27,6 +32,8 @@ public class PayablePayment {
 
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
+    @NonNull public String getSyncId() { return syncId; }
+    public void setSyncId(@NonNull String syncId) { this.syncId = syncId; }
     public int getPayableId() { return payableId; }
     public void setPayableId(int payableId) { this.payableId = payableId; }
     public double getAmount() { return amount; }

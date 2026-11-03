@@ -1,12 +1,19 @@
 package com.financeapp.uganda.models;
 
+import androidx.annotation.NonNull;
+import androidx.room.ColumnInfo;
 import androidx.room.Entity;
+import androidx.room.Index;
 import androidx.room.PrimaryKey;
+import java.util.UUID;
 
-@Entity(tableName = "journal_lines")
+@Entity(tableName = "journal_lines", indices = {@Index(value = {"syncId"}, unique = true)})
 public class JournalLine {
     @PrimaryKey(autoGenerate = true)
     private int id;
+    @NonNull
+    @ColumnInfo(defaultValue = "''")
+    private String syncId = UUID.randomUUID().toString();
     private int journalEntryId;
     private int accountId;
     private double debit;
@@ -25,6 +32,8 @@ public class JournalLine {
 
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
+    @NonNull public String getSyncId() { return syncId; }
+    public void setSyncId(@NonNull String syncId) { this.syncId = syncId; }
     public int getJournalEntryId() { return journalEntryId; }
     public void setJournalEntryId(int journalEntryId) { this.journalEntryId = journalEntryId; }
     public int getAccountId() { return accountId; }

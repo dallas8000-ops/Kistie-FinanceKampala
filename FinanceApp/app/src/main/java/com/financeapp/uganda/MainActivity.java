@@ -11,6 +11,7 @@ import com.financeapp.uganda.fragments.HomeFragment;
 import com.financeapp.uganda.fragments.MoreFragment;
 import com.financeapp.uganda.fragments.OperationsFragment;
 import com.financeapp.uganda.fragments.ReportsFragment;
+import com.financeapp.uganda.sync.FinanceSyncScheduler;
 import com.financeapp.uganda.utils.PrefsHelper;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -20,6 +21,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        FinanceSyncScheduler.schedule(this);
         setContentView(R.layout.activity_main_nav);
 
         MaterialToolbar toolbar = findViewById(R.id.toolbar);
